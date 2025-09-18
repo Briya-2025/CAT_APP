@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Home - Unified Course Assessment{% endblock %}
+{% block title %}Home - Course Assessment Tool{% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
@@ -10,7 +10,7 @@
             <div class="col-lg-8">
                 <h1 class="display-4 fw-bold mb-4">
                     <i class="fas fa-graduation-cap me-3"></i>
-                    Unified Course Assessment
+                    Course Assessment Tool
                 </h1>
                 <p class="lead mb-4">
                     {% if user.is_authenticated %}
@@ -39,14 +39,16 @@
                 </div>
             </div>
             <div class="col-lg-4 text-center">
-                <img src="/static/logo1.jpeg" alt="Khalifa University Logo" style="max-height: 200px; max-width: 200px; opacity: 0.8;">
+                <div class="logo-container">
+                    <img src="/static/logo1.jpeg" alt="Khalifa University Logo" class="home-logo">
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Statistics Section -->
-<div class="container">
+<div class="container mt-3">
     <div class="row">
         <div class="col-md-4">
             <div class="stats-card">
@@ -91,7 +93,7 @@
 </div>
 
 <!-- Features Section -->
-<div class="container mt-5">
+<div class="container mt-3">
     <div class="row">
         <div class="col-lg-8 mx-auto text-center">
             <h2 class="mb-5">Key Features</h2>
@@ -143,7 +145,7 @@
 
 <!-- Recent Courses Section -->
 {% if courses %}
-<div class="container mt-5">
+<div class="container mt-3">
     <div class="row">
         <div class="col-lg-8 mx-auto">
             <h3 class="mb-4">
@@ -195,7 +197,7 @@
 {% endif %}
 
 <!-- Quick Actions Section -->
-<div class="container mt-5">
+<div class="container mt-3">
     <div class="row">
         <div class="col-lg-8 mx-auto">
             <div class="card">

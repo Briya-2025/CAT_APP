@@ -154,12 +154,12 @@ class AssessmentForm(forms.ModelForm):
             }),
             'max_marks': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'step': '0.01',
+                'step': '1',
                 'min': '0'
             }),
             'average_marks': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'step': '0.01',
+                'step': '1',
                 'min': '0'
             }),
         }

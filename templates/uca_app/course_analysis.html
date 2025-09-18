@@ -193,7 +193,7 @@
                     </div>
                     
                     <!-- Chart Container -->
-                    <div id="comprehensiveChart" style="height: 650px; border-radius: 15px; backdrop-filter: blur(10px); background: rgba(255,255,255,0.1); padding: 20px;"></div>
+                    <div id="comprehensiveChart" style="height: 750px; border-radius: 15px; background: rgba(255,255,255,0.95); padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);"></div>
                 </div>
             </div>
         </div>
@@ -401,32 +401,42 @@ function initializeComprehensiveChart() {
         xaxis: {
             title: {
                 text: 'Sections',
-                font: { size: 18, color: '#000000' }
+                font: { size: 18, color: '#000000', family: 'Arial, sans-serif' }
             },
-            tickfont: { size: 16, color: '#000000' },
+            tickfont: { size: 16, color: '#000000', family: 'Arial, sans-serif' },
+            tickcolor: '#000000',
             showgrid: true,
             gridcolor: 'rgba(0,0,0,0.1)',
             showline: true,
             linecolor: '#000000',
-            linewidth: 1,
-            mirror: true
+            linewidth: 2,
+            mirror: true,
+            automargin: true
         },
         yaxis: {
             title: {
                 text: 'Percentage (%)',
-                font: { size: 18, color: '#000000' }
+                font: { size: 18, color: '#000000', family: 'Arial, sans-serif' }
             },
-            tickfont: { size: 16, color: '#000000' },
+            tickfont: { size: 16, color: '#000000', family: 'Arial, sans-serif' },
+            tickcolor: '#000000',
             showgrid: true,
             gridcolor: 'rgba(0,0,0,0.1)',
             showline: true,
             linecolor: '#000000',
-            linewidth: 1,
-            mirror: true
+            linewidth: 2,
+            mirror: true,
+            automargin: true
         },
         barmode: 'group',
         showlegend: true,
-        height: 650,
+        height: 700,
+        margin: {
+            l: 80,
+            r: 50,
+            t: 100,
+            b: 100
+        },
         plot_bgcolor: 'rgba(255,255,255,0.2)',
         paper_bgcolor: 'rgba(255,255,255,0.1)',
         font: { color: '#333' },

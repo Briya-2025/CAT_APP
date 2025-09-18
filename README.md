@@ -1,4 +1,4 @@
-# Unified Course Assessment - Django Web Application
+# Course Assessment Tool - Django Web Application
 
 A comprehensive web-based course assessment and analysis system for the Department of Physics, converted from the original desktop application.
 
