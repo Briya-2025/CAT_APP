@@ -1,0 +1,14 @@
+# Django Production Settings
+SECRET_KEY=your-super-secret-key-here-change-this-in-production
+DEBUG=False
+ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+
+# Database (if using external database)
+# DATABASE_URL=postgresql://user:password@host:port/database
+
+# Email settings (optional)
+# EMAIL_HOST=smtp.gmail.com
+# EMAIL_PORT=587
+# EMAIL_USE_TLS=True
+# EMAIL_HOST_USER=your-email@gmail.com
+# EMAIL_HOST_PASSWORD=your-app-password

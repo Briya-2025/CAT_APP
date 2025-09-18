@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Course - {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1">Delete Course</h2>
+                            <p class="text-muted mb-0">Confirm deletion</p>
+                        </div>
+                        <div class="text-end">
+                            <a href="{% url 'uca_app:course_detail' course.id %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Course
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading">Warning!</h5>
+                        <p class="mb-0">You are about to delete the course <strong>"{{ course.name }}"</strong>. This action cannot be undone.</p>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Course Information</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Name:</strong></td>
+                                    <td>{{ course.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Code:</strong></td>
+                                    <td>{{ course.code|default:"Not specified" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Term/Semester:</strong></td>
+                                    <td>{{ course.term_semester }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Coordinator:</strong></td>
+                                    <td>{{ course.coordinator|default:"Not specified" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Sections:</strong></td>
+                                    <td>{{ course.sections.count }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5>What will be deleted:</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <i class="fas fa-users text-danger me-2"></i>
+                                    All course sections ({{ course.sections.count }})
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-clipboard-list text-danger me-2"></i>
+                                    All assessments and grades
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-chart-bar text-danger me-2"></i>
+                                    All analysis data and reports
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-cog text-danger me-2"></i>
+                                    Course configuration
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'uca_app:course_detail' course.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-2"></i>Delete Course
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

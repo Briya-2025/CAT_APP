@@ -1,0 +1,204 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          # Update system packages
+          sudo apt update && sudo apt upgrade -y
+          
+          # Install required packages (compatible with Kali Linux)
+          sudo apt update
+          sudo apt install -y python3 python3-pip python3-venv python3-dev nginx postgresql postgresql-contrib git curl certbot python3-certbot-nginx build-essential libpq-dev
+          
+          # Set project directory
+          PROJECT_DIR="/var/www/uca_app"
+          
+          # Remove existing directory to avoid conflicts
+          sudo rm -rf $PROJECT_DIR
+          sudo mkdir -p $PROJECT_DIR
+          sudo chown ${{ secrets.SERVER_USER }}:${{ secrets.SERVER_USER }} $PROJECT_DIR
+          
+          # Clone the repository fresh
+          echo "Cloning repository..."
+          git clone -b main https://github.com/${{ github.repository }}.git $PROJECT_DIR
+          cd $PROJECT_DIR
+          
+          # Create virtual environment
+          python3 -m venv venv
+          source venv/bin/activate
+          
+          # Install Python dependencies step by step (like localhost)
+          pip install --upgrade pip
+          
+          # Install build tools first
+          pip install --upgrade "setuptools>=65.0.0,<81.0.0" wheel>=0.42.0
+          
+          # Install core dependencies first
+          pip install Django==4.2.7
+          pip install djangorestframework==3.14.0
+          pip install django-crispy-forms==2.0
+          pip install crispy-bootstrap5==0.7
+          pip install python-decouple==3.8
+          pip install whitenoise==6.5.0
+          pip install gunicorn==21.2.0
+          pip install dj-database-url==2.1.0
+          
+          # Install data science packages
+          pip install "numpy>=1.26.0"
+          pip install "pandas>=2.1.0"
+          pip install "matplotlib>=3.8.0"
+          pip install "plotly>=5.17.0"
+          pip install "openpyxl>=3.1.2"
+          pip install "reportlab>=4.0.4"
+          pip install "Pillow>=10.0.1"
+          
+          # Install Django extensions (widget_tweaks removed due to Python 3.13 compatibility)
+          pip install django-jsonfield==1.4.1
+          
+          # setuptools already pinned above
+          
+          # Install PostgreSQL adapter (psycopg3 instead of psycopg2-binary for Python 3.13)
+          pip install psycopg==3.1.18
+          
+          # Create .env file with proper values (database credentials hardcoded)
+          cat > .env << EOF
+          SECRET_KEY=${{ secrets.UCA_SECRET_KEY }}
+          DEBUG=False
+          ALLOWED_HOSTS=${{ secrets.UCA_ALLOWED_HOSTS }}
+          EMAIL_HOST=smtp.gmail.com
+          EMAIL_PORT=587
+          EMAIL_USE_TLS=True
+          EMAIL_HOST_USER=${{ secrets.UCA_EMAIL_HOST_USER }}
+          EMAIL_HOST_PASSWORD=${{ secrets.UCA_EMAIL_HOST_PASSWORD }}
+          EOF
+          
+          # Create PostgreSQL database and user if they don't exist
+          echo "Setting up PostgreSQL database..."
+          sudo -u postgres psql -c "CREATE DATABASE uca_app;" 2>/dev/null || echo "Database uca_app already exists"
+          sudo -u postgres psql -c "CREATE USER uca_user WITH PASSWORD 'UCA_2024_Secure!';" 2>/dev/null || echo "User uca_user already exists"
+          sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE uca_app TO uca_user;" 2>/dev/null || echo "Privileges already granted"
+          sudo -u postgres psql -c "ALTER USER uca_user CREATEDB;" 2>/dev/null || echo "User already has CREATEDB privilege"
+          echo "Using hardcoded database: uca_app"
+          
+          # Run Django migrations
+          export DJANGO_SETTINGS_MODULE=uca_project.settings_production
+          python manage.py makemigrations
+          python manage.py migrate
+
+          # Collect static files
+          python manage.py collectstatic --noinput
+          
+          # Test Django application startup
+          echo "=== Testing Django Application ==="
+          python manage.py check --deploy || echo "Django check failed"
+          
+          # Create superuser if it doesn't exist
+          echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin', 'admin@example.com', 'admin123')" | python manage.py shell
+          
+          # Stop existing service if running
+          sudo systemctl stop uca_app.service 2>/dev/null || echo "Service not running"
+          
+          # Set up Gunicorn service for port 8000
+          sudo tee /etc/systemd/system/uca_app.service > /dev/null << EOF
+          [Unit]
+          Description=UCA App Django Application
+          After=network.target postgresql.service
+          
+          [Service]
+          User=www-data
+          Group=www-data
+          WorkingDirectory=/var/www/uca_app
+          Environment="PATH=/var/www/uca_app/venv/bin"
+          Environment="DJANGO_SETTINGS_MODULE=uca_project.settings_production"
+          # Database credentials are hardcoded in settings_production.py
+          ExecStart=/var/www/uca_app/venv/bin/gunicorn --config /var/www/uca_app/gunicorn_uca_app.conf.py uca_project.wsgi:application
+          ExecReload=/bin/kill -s HUP \$MAINPID
+          Restart=always
+          RestartSec=5
+          
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+          
+          # Copy dedicated Nginx configuration
+          sudo cp nginx_uca_app.conf /etc/nginx/sites-available/uca_app
+          
+          # Enable Nginx site
+          sudo ln -sf /etc/nginx/sites-available/uca_app /etc/nginx/sites-enabled/
+          sudo rm -f /etc/nginx/sites-enabled/default
+          
+          # Create logs directories and set proper permissions
+          mkdir -p $PROJECT_DIR/logs
+          sudo mkdir -p /var/log/gunicorn
+          sudo chown -R www-data:www-data $PROJECT_DIR
+          sudo chown -R www-data:www-data /var/log/gunicorn
+          sudo chmod -R 755 $PROJECT_DIR
+          sudo chmod -R 755 /var/log/gunicorn
+          sudo chmod 660 $PROJECT_DIR/.env
+          sudo chmod 755 $PROJECT_DIR/logs
+          
+          # Test Nginx configuration
+          sudo nginx -t
+          
+          # Start Nginx first (required for SSL certificate generation)
+          sudo systemctl restart nginx
+          
+          # Generate SSL certificate with Let's Encrypt (with error handling)
+          echo "Generating SSL certificate..."
+          if [ -n "${{ secrets.UCA_EMAIL_HOST_USER }}" ]; then
+              if sudo certbot --nginx -d ${{ secrets.UCA_DOMAIN }} --non-interactive --agree-tos --email ${{ secrets.UCA_EMAIL_HOST_USER }} --redirect; then
+                  echo "SSL certificate generated successfully!"
+                  sudo systemctl reload nginx
+              else
+                  echo "SSL certificate generation failed, but application will work on HTTP"
+                  echo "You can manually generate SSL certificate later with:"
+                  echo "sudo certbot --nginx -d ${{ secrets.UCA_DOMAIN }}"
+              fi
+          else
+              echo "No email provided for SSL certificate. Application will work on HTTP"
+              echo "To enable SSL later, run: sudo certbot --nginx -d ${{ secrets.UCA_DOMAIN }}"
+          fi
+          
+          # Start services
+          sudo systemctl daemon-reload
+          sudo systemctl enable uca_app.service
+          sudo systemctl restart uca_app.service
+          sudo systemctl restart nginx
+          
+          # Wait for services to start
+          sleep 10
+          
+          # Check service status
+          sudo systemctl status uca_app.service --no-pager -l
+          
+          # Check service logs for errors
+          echo "=== Service Logs ==="
+          sudo journalctl -u uca_app.service --no-pager -l --lines=50
+          
+          # Verify port 2287 is listening
+          sudo netstat -tlnp | grep 2287
+          
+          # Test database connection
+          echo "=== Testing Database Connection ==="
+          PGPASSWORD='UCA_2024_Secure!' psql -h 127.0.0.1 -U uca_user -d uca_app -c "SELECT version();" || echo "Database connection failed"
+          
+          echo "Deployment completed successfully!"
+          echo "Your UCA application is running at: http://${{ secrets.UCA_DOMAIN }}"
+          echo "Gunicorn is running on port 2287"
+          echo "Admin user created: username=admin, password=admin123"
+          echo "To enable SSL, run: sudo certbot --nginx -d ${{ secrets.UCA_DOMAIN }}"

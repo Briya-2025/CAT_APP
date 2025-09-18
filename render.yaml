@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: uca-app
+    env: python
+    plan: free
+    pythonVersion: "3.11"
+    buildCommand: "pip install -r requirements_minimal.txt && pip install --upgrade kaleido && python manage.py migrate && python manage.py collectstatic --noinput"
+    startCommand: "python -m gunicorn uca_project.wsgi:application"
+    envVars:
+      - key: SECRET_KEY
+        value: hGW9M6wL6qmxE9DJ9M7l0DG1YZ_Bx9ob39Sp3f5E9BuT86BIGIkRrvskHKLtz1x_Kqs
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: uca-app.onrender.com

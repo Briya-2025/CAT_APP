@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Grade Categories - {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1">{{ course.name }}</h2>
+                            <p class="text-muted mb-0">{{ course.code }} - {{ course.term_semester }}</p>
+                            <p class="text-muted mb-0">Edit Grade Categories</p>
+                        </div>
+                        <div class="text-end">
+                            <a href="{% url 'uca_app:grade_distribution' course.id %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Grade Distribution
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grade Categories Editor -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Grade Categories Configuration
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="gradeCategoriesForm">
+                        {% csrf_token %}
+                        
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Order</th>
+                                        <th>Grade</th>
+                                        <th>Min Percentage</th>
+                                        <th>Max Percentage</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gradeCategoriesTable">
+                                    {% for category in grade_categories %}
+                                    <tr class="grade-category-row">
+                                        <td>
+                                            <input type="number" name="grade_{{ forloop.counter0 }}_order" 
+                                                   value="{{ category.order }}" min="0" class="form-control">
+                                        </td>
+                                        <td>
+                                            <input type="text" name="grade_{{ forloop.counter0 }}_grade" 
+                                                   value="{{ category.grade }}" class="form-control" required>
+                                        </td>
+                                        <td>
+                                            <input type="number" name="grade_{{ forloop.counter0 }}_min" 
+                                                   value="{{ category.min_percentage }}" step="0.01" min="0" max="100" 
+                                                   class="form-control" required>
+                                        </td>
+                                        <td>
+                                            <input type="number" name="grade_{{ forloop.counter0 }}_max" 
+                                                   value="{{ category.max_percentage|default:'' }}" step="0.01" min="0" max="100" 
+                                                   class="form-control">
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-danger btn-sm remove-row">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr class="grade-category-row">
+                                        <td>
+                                            <input type="number" name="grade_0_order" value="0" min="0" class="form-control">
+                                        </td>
+                                        <td>
+                                            <input type="text" name="grade_0_grade" value="A" class="form-control" required>
+                                        </td>
+                                        <td>
+                                            <input type="number" name="grade_0_min" value="92.5" step="0.01" min="0" max="100" 
+                                                   class="form-control" required>
+                                        </td>
+                                        <td>
+                                            <input type="number" name="grade_0_max" value="100" step="0.01" min="0" max="100" 
+                                                   class="form-control">
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-danger btn-sm remove-row">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-success" id="addGradeCategory">
+                                <i class="fas fa-plus me-2"></i>Add Grade Category
+                            </button>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'uca_app:grade_distribution' course.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Grade Categories
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let rowIndex = {{ grade_categories|length|default:1 }};
+    
+    // Add new grade category row
+    document.getElementById('addGradeCategory').addEventListener('click', function() {
+        const tableBody = document.getElementById('gradeCategoriesTable');
+        const newRow = document.createElement('tr');
+        newRow.className = 'grade-category-row';
+        newRow.innerHTML = `
+            <td>
+                <input type="number" name="grade_${rowIndex}_order" value="${rowIndex}" min="0" class="form-control">
+            </td>
+            <td>
+                <input type="text" name="grade_${rowIndex}_grade" value="" class="form-control" required>
+            </td>
+            <td>
+                <input type="number" name="grade_${rowIndex}_min" value="" step="0.01" min="0" max="100" 
+                       class="form-control" required>
+            </td>
+            <td>
+                <input type="number" name="grade_${rowIndex}_max" value="" step="0.01" min="0" max="100" 
+                       class="form-control">
+            </td>
+            <td>
+                <button type="button" class="btn btn-danger btn-sm remove-row">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(newRow);
+        rowIndex++;
+    });
+    
+    // Remove grade category row
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-row')) {
+            const row = e.target.closest('.grade-category-row');
+            if (document.querySelectorAll('.grade-category-row').length > 1) {
+                row.remove();
+            } else {
+                alert('At least one grade category is required.');
+            }
+        }
+    });
+    
+    // Form validation
+    document.getElementById('gradeCategoriesForm').addEventListener('submit', function(e) {
+        const rows = document.querySelectorAll('.grade-category-row');
+        if (rows.length === 0) {
+            e.preventDefault();
+            alert('At least one grade category is required.');
+            return;
+        }
+        
+        // Validate that all required fields are filled
+        let isValid = true;
+        rows.forEach(row => {
+            const gradeInput = row.querySelector('input[name$="_grade"]');
+            const minInput = row.querySelector('input[name$="_min"]');
+            
+            if (!gradeInput.value.trim() || !minInput.value) {
+                isValid = false;
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Please fill in all required fields (Grade and Min Percentage).');
+        }
+    });
+});
+</script>
+{% endblock %}

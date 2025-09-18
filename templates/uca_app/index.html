@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Unified Course Assessment{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold mb-4">
+                    <i class="fas fa-graduation-cap me-3"></i>
+                    Unified Course Assessment
+                </h1>
+                <p class="lead mb-4">
+                    {% if user.is_authenticated %}
+                        Welcome, {{ user.username }}! Manage your course assessments and track student performance for your courses.
+                    {% else %}
+                        Comprehensive course evaluation and analysis system for the Department of Physics. 
+                        Please log in to manage your courses and track student performance.
+                    {% endif %}
+                </p>
+                <div class="d-flex gap-3">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'uca_app:course_create' %}" class="btn btn-light btn-lg">
+                            <i class="fas fa-plus me-2"></i>Create New Course
+                        </a>
+                        <a href="{% url 'uca_app:course_list' %}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-list me-2"></i>My Courses
+                        </a>
+                    {% else %}
+                        <a href="{% url 'uca_app:simple_login' %}" class="btn btn-light btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login
+                        </a>
+                        <a href="{% url 'uca_app:simple_register' %}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Get Started
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-4 text-center">
+                <img src="/static/logo1.jpeg" alt="Khalifa University Logo" style="max-height: 200px; max-width: 200px; opacity: 0.8;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Section -->
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="stats-card">
+                <i class="fas fa-book-open fa-3x mb-3"></i>
+                <h3>{{ total_courses }}</h3>
+                <p class="mb-0">
+                    {% if user.is_authenticated %}
+                        My Courses
+                    {% else %}
+                        Total Courses
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <i class="fas fa-users fa-3x mb-3"></i>
+                <h3>{{ total_sections }}</h3>
+                <p class="mb-0">
+                    {% if user.is_authenticated %}
+                        My Sections
+                    {% else %}
+                        Course Sections
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <i class="fas fa-user-graduate fa-3x mb-3"></i>
+                <h3>{{ total_students }}</h3>
+                <p class="mb-0">
+                    {% if user.is_authenticated %}
+                        My Students
+                    {% else %}
+                        Total Students
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto text-center">
+            <h2 class="mb-5">Key Features</h2>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="fas fa-chart-bar fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Course Analysis</h5>
+                    <p class="card-text">Comprehensive statistical analysis with interactive charts and visualizations.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="fas fa-file-pdf fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">PDF Reports</h5>
+                    <p class="card-text">Generate professional PDF reports with detailed course statistics and charts.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="fas fa-download fa-3x text-info mb-3"></i>
+                    <h5 class="card-title">Data Export</h5>
+                    <p class="card-text">Export course data in Excel format for backup and sharing purposes.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="fas fa-upload fa-3x text-warning mb-3"></i>
+                    <h5 class="card-title">Project Import</h5>
+                    <p class="card-text">Import existing course projects from Excel files for easy data migration.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Courses Section -->
+{% if courses %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h3 class="mb-4">
+                Your Recent Courses
+            </h3>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Course Name</th>
+                                    <th>Code</th>
+                                    <th>Term</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course in courses %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ course.name }}</strong>
+                                    </td>
+                                    <td>{{ course.code|default:"-" }}</td>
+                                    <td>{{ course.term_semester }}</td>
+                                    <td>
+                                        <a href="{% url 'uca_app:course_detail' course.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'uca_app:course_edit' course.id %}" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'uca_app:course_list' %}" class="btn btn-primary">
+                            View All Courses
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Actions Section -->
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h4 class="card-title mb-4">Quick Actions</h4>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <a href="{% url 'uca_app:course_create' %}" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-plus me-2"></i>Create New Course
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{% url 'uca_app:project_import' %}" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-upload me-2"></i>Import Project
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

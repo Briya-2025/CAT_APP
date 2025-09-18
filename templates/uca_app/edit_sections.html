@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Sections - {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1">{{ course.name }}</h2>
+                            <p class="text-muted mb-0">{{ course.code }} - {{ course.term_semester }}</p>
+                            <p class="text-muted mb-0">Edit Section Details</p>
+                        </div>
+                        <div class="text-end">
+                            <a href="{% url 'uca_app:course_analysis' course.id %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Analysis
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Sections Form -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Edit Section Information
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ formset.management_form }}
+                        
+                        <div class="row">
+                            {% for form in formset %}
+                            <div class="col-md-6 mb-4">
+                                <div class="card {% if not form.instance.pk %}border-primary{% endif %}">
+                                    <div class="card-header {% if not form.instance.pk %}bg-primary text-white{% endif %}">on page
+                                        <h5 class="mb-0">
+                                            {% if form.instance.pk %}
+                                                Section {{ form.instance.section_number }}
+                                            {% else %}
+                                                <i class="fas fa-plus me-2"></i>New Section
+                                            {% endif %}
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        {% for field in form %}
+                                            {% if field.name != 'DELETE' %}
+                                                <div class="mb-3">
+                                                    <label for="{{ field.id_for_label }}" class="form-label">
+                                                        {{ field.label }}
+                                                        {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                                                    </label>
+                                                    {{ field }}
+                                                    {% if field.help_text %}
+                                                        <div class="form-text">{{ field.help_text }}</div>
+                                                    {% endif %}
+                                                    {% if field.errors %}
+                                                        <div class="text-danger">
+                                                            {% for error in field.errors %}
+                                                                <small>{{ error }}</small>
+                                                            {% endfor %}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% if form.DELETE %}
+                                            <div class="form-check">
+                                                {{ form.DELETE }}
+                                                <label class="form-check-label text-danger" for="{{ form.DELETE.id_for_label }}">
+                                                    Delete this section
+                                                </label>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-outline-success" id="addSectionBtn">
+                                <i class="fas fa-plus me-2"></i>Add Another Section
+                            </button>
+                            <small class="text-muted ms-2">Click to add more sections if needed</small>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'uca_app:course_analysis' course.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Update Sections
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let formCount = {{ formset.total_form_count }};
+    const maxForms = {{ formset.max_num }};
+    
+    // Add confirmation for delete checkboxes
+    const deleteCheckboxes = document.querySelectorAll('input[name$="-DELETE"]');
+    deleteCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                if (!confirm('Are you sure you want to delete this section? This action cannot be undone.')) {
+                    this.checked = false;
+                }
+            }
+        });
+    });
+    
+    // Add section button functionality
+    const addSectionBtn = document.getElementById('addSectionBtn');
+    const formContainer = document.querySelector('.row');
+    const managementForm = document.querySelector('#id_form-TOTAL_FORMS');
+    
+    addSectionBtn.addEventListener('click', function() {
+        if (formCount < maxForms) {
+            // Clone the last empty form
+            const lastForm = formContainer.lastElementChild;
+            const newForm = lastForm.cloneNode(true);
+            
+            // Update form indices
+            const newIndex = formCount;
+            const inputs = newForm.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                if (input.name) {
+                    input.name = input.name.replace(/form-\d+-/, `form-${newIndex}-`);
+                    input.id = input.id.replace(/id_form-\d+-/, `id_form-${newIndex}-`);
+                }
+            });
+            
+            // Update labels
+            const labels = newForm.querySelectorAll('label');
+            labels.forEach(label => {
+                if (label.getAttribute('for')) {
+                    label.setAttribute('for', label.getAttribute('for').replace(/id_form-\d+-/, `id_form-${newIndex}-`));
+                }
+            });
+            
+            // Clear values for new form
+            const valueInputs = newForm.querySelectorAll('input[type="text"], input[type="number"], select, textarea');
+            valueInputs.forEach(input => {
+                if (input.name && !input.name.includes('DELETE')) {
+                    input.value = '';
+                }
+            });
+            
+            // Update header
+            const header = newForm.querySelector('.card-header h5');
+            header.innerHTML = '<i class="fas fa-plus me-2"></i>New Section';
+            newForm.querySelector('.card').classList.add('border-primary');
+            newForm.querySelector('.card-header').classList.add('bg-primary', 'text-white');
+            
+            // Add to container
+            formContainer.appendChild(newForm);
+            
+            // Update form count
+            formCount++;
+            managementForm.value = formCount;
+            
+            // Scroll to new form
+            newForm.scrollIntoView({ behavior: 'smooth' });
+            
+            // Disable button if max reached
+            if (formCount >= maxForms) {
+                addSectionBtn.disabled = true;
+                addSectionBtn.textContent = 'Maximum sections reached';
+            }
+        }
+    });
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const requiredFields = form.querySelectorAll('input[required], select[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.classList.add('is-invalid');
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+        }
+    });
+});
+</script>
+{% endblock %}

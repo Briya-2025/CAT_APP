@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Unified Course Assessment{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% load static %}{% static 'favicon.ico' %}">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #00008B;
+            --secondary-color: #5ec776;
+            --accent-color: #f46270;
+            --light-bg: #f8f9fa;
+            --dark-bg: #343a40;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: white;
+            min-height: 100vh;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .navbar-logo {
+            position: absolute;
+            top: 180%;
+            right: 150px;
+            z-index: 10;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .logo-img {
+            height: 250px;
+            width: 250;
+            max-width: 600px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        
+        .btn-primary {
+            background: var(--primary-color);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: #000066;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-success {
+            background: #1b2c64;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+            font-weight: 600;
+        }
+        
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(41, 41, 123, 0.25);
+        }
+        
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .table thead th {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+        
+        .progress {
+            height: 25px;
+            border-radius: 15px;
+            background: #e9ecef;
+        }
+        
+        .progress-bar {
+            background: var(--secondary-color);
+            border-radius: 15px;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        
+        .footer {
+            background: var(--dark-bg);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #000066 100%);
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 3rem;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #0066CC 0%, #0066CC 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .stats-card h3 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .weight-input {
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .weight-sum {
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .weight-sum.valid {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        
+        .weight-sum.invalid {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        
+        .section-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid var(--primary-color);
+        }
+        
+        .assessment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 1rem;
+        }
+        
+        .assessment-item {
+            background: var(--light-bg);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .grade-table {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .grade-table th {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .grade-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .grade-table input {
+            width: 80px;
+            text-align: center;
+            border: 2px solid #e9ecef;
+            border-radius: 5px;
+            padding: 5px;
+        }
+        
+        .grade-table input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 2rem 0;
+            }
+            
+            .stats-card h3 {
+                font-size: 2rem;
+            }
+            
+            .assessment-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: var(--primary-color);">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'uca_app:index' %}">
+                <i class="fas fa-graduation-cap me-2"></i>
+                Unified Course Assessment
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'uca_app:index' %}">
+                            <i class="fas fa-home me-1"></i>Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'uca_app:course_list' %}">
+                            <i class="fas fa-list me-1"></i>Courses
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'uca_app:course_create' %}">
+                            <i class="fas fa-plus me-1"></i>New Course
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'uca_app:project_import' %}">
+                            <i class="fas fa-upload me-1"></i>Import
+                        </a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user me-1"></i>{{ user.first_name|default:user.username }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'uca_app:course_list' %}">
+                                    <i class="fas fa-list me-2"></i>My Courses
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'uca_app:simple_logout' %}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'uca_app:simple_login' %}">
+                                <i class="fas fa-sign-in-alt me-1"></i>Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'uca_app:simple_register' %}">
+                                <i class="fas fa-user-plus me-1"></i>Register
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+            
+           
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="container-fluid py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer bg-dark text-light py-4">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-6">
+            <h5 class="mb-2">Unified Course Assessment</h5>
+            
+            <p class="mb-1">
+              <strong>Developed by:</strong> Briya Tariq<br>
+              PhD Physics Student<br>
+              <a href="mailto:aamir.raja@ku.ac.ae" class="text-light"></a>100062544@ku.ac.ae</a>
+            <p class="mb-1">
+              <strong>Concept, Supervision, and Guidance:</strong><br>
+              Dr. Aamir Younis Raja<br>
+              Assistant Professor, Department of Physics<br>
+              <a href="mailto:aamir.raja@ku.ac.ae" class="text-light">aamir.raja@ku.ac.ae</a>
+            </p>
+          </div>
+          <div class="col-md-6 text-md-end">
+            <h5 class="mb-2">Features</h5>
+            <ul class="list-unstyled">
+              <li><i class="fas fa-chart-bar me-2"></i>Course Analysis</li>
+              <li><i class="fas fa-file-pdf me-2"></i>PDF Reports</li>
+              <li><i class="fas fa-download me-2"></i>Data Export</li>
+              <li><i class="fas fa-upload me-2"></i>Project Import</li>
+            </ul>
+            <div class="mt-3">
+              <div style="background: white; padding: 8px; border-radius: 6px; display: inline-block;">
+                <img src="/static/logo.png" alt="KU Logo" style="height: 60px;">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-12 text-center">
+            <small>&copy; 2025 Department of Physics, KU. Version 1.0. All rights reserved.</small>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Weight calculation
+        function calculateWeights() {
+            let total = 0;
+            $('.weight-input').each(function() {
+                const value = parseFloat($(this).val()) || 0;
+                total += value;
+            });
+            
+            const weightSum = $('.weight-sum');
+            weightSum.text(`Total Weight: ${total.toFixed(2)}%`);
+            
+            if (Math.abs(total - 100) < 0.01) {
+                weightSum.removeClass('invalid').addClass('valid');
+                $('.btn-calculate').prop('disabled', false);
+            } else {
+                weightSum.removeClass('valid').addClass('invalid');
+                $('.btn-calculate').prop('disabled', true);
+            }
+        }
+        
+        // Initialize weight calculation
+        $(document).ready(function() {
+            $('.weight-input').on('input', calculateWeights);
+            calculateWeights();
+            
+            // Auto-hide alerts after 5 seconds
+            setTimeout(function() {
+                $('.alert').fadeOut();
+            }, 5000);
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

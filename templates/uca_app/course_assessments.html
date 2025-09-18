@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Course Assessments - {{ course.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1">{{ course.name }}</h2>
+                            <p class="text-muted mb-0">{{ course.code }} - {{ course.term_semester }}</p>
+                            <p class="text-muted mb-0">Step 3: Manage Assessments</p>
+                        </div>
+                        <div class="text-end">
+                            <a href="{% url 'uca_app:course_sections' course.id %}" class="btn btn-secondary me-2">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Sections
+                            </a>
+                            <button type="button" class="btn btn-outline-primary me-2" onclick="saveAssessments()">
+                                <i class="fas fa-save me-2"></i>Save Assessments
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="saveAndNext()">
+                                <i class="fas fa-arrow-right me-2"></i>Next: Analysis
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessment Management -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-clipboard-list me-2"></i>Assessment Data
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="assessmentForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="assessment_data" id="assessmentData">
+                        
+                        {% for section in sections %}
+                        <div class="section-card mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-users me-2"></i>Section {{ section.section_number }} - {{ section.instructor }}
+                                <span class="badge bg-primary ms-2">{{ section.total_students }} students</span>
+                            </h5>
+                            
+                            <div class="assessment-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                                {% for assessment in section.assessments.all %}
+                                <div class="assessment-item" style="border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 1rem; background-color: #f8f9fa;">
+                                    <label class="form-label">{{ assessment.get_assessment_type_display }} {{ assessment.assessment_number }}</label>
+                                    <input type="number" class="form-control" 
+                                           name="max_marks_{{ section.id }}_{{ assessment.id }}" 
+                                           placeholder="Max Marks" 
+                                           value="{% if assessment.max_marks %}{{ assessment.max_marks }}{% endif %}" 
+                                           step="0.01" min="0">
+                                    <input type="number" class="form-control mt-2" 
+                                           name="average_marks_{{ section.id }}_{{ assessment.id }}" 
+                                           placeholder="Average Marks" 
+                                           value="{% if assessment.average_marks %}{{ assessment.average_marks }}{% endif %}" 
+                                           step="0.01" min="0">
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function collectAssessmentData() {
+        const assessmentData = {};
+        const inputs = document.querySelectorAll('input[name^="max_marks_"], input[name^="average_marks_"]');
+        
+        inputs.forEach(input => {
+            const parts = input.name.split('_');
+            const sectionId = parts[2];
+            const assessmentId = parts[3];
+            const fieldType = parts[0] + '_' + parts[1]; // max_marks or average_marks
+            
+            if (!assessmentData[sectionId]) {
+                assessmentData[sectionId] = [];
+            }
+            
+            let assessment = assessmentData[sectionId].find(a => a.id === assessmentId);
+            if (!assessment) {
+                // Get assessment type and number from the label
+                const assessmentItem = input.closest('.assessment-item');
+                const label = assessmentItem.querySelector('label');
+                const labelText = label.textContent.trim();
+                
+                // Extract assessment type and number from label text
+                let assessmentType = 'quiz';
+                let assessmentNumber = 1;
+                
+                if (labelText.includes('Quiz')) {
+                    assessmentType = 'quiz';
+                    const match = labelText.match(/Quiz (\d+)/);
+                    if (match) assessmentNumber = parseInt(match[1]);
+                } else if (labelText.includes('Assignment')) {
+                    assessmentType = 'assignment';
+                    const match = labelText.match(/Assignment (\d+)/);
+                    if (match) assessmentNumber = parseInt(match[1]);
+                } else if (labelText.includes('Homework')) {
+                    assessmentType = 'hw';
+                } else if (labelText.includes('Midterm')) {
+                    assessmentType = 'midterm';
+                } else if (labelText.includes('Final')) {
+                    assessmentType = 'final';
+                } else if (labelText.includes('Lab')) {
+                    assessmentType = 'lab';
+                }
+                
+                assessment = { 
+                    id: assessmentId,
+                    type: assessmentType,
+                    number: assessmentNumber
+                };
+                assessmentData[sectionId].push(assessment);
+            }
+            
+            assessment[fieldType] = parseFloat(input.value) || 0;
+        });
+        
+        return assessmentData;
+    }
+    
+    function saveAssessments() {
+        // Collect assessment data
+        const assessmentData = collectAssessmentData();
+        
+        // Set the hidden input value
+        document.getElementById('assessmentData').value = JSON.stringify(assessmentData);
+        
+        // Submit the form with 'save' action
+        var form = $('#assessmentForm');
+        var actionInput = $('<input>').attr({
+            type: 'hidden',
+            name: 'action',
+            value: 'save'
+        });
+        form.append(actionInput);
+        form.submit();
+    }
+    
+    function saveAndNext() {
+        // Collect assessment data
+        const assessmentData = collectAssessmentData();
+        
+        // Set the hidden input value
+        document.getElementById('assessmentData').value = JSON.stringify(assessmentData);
+        
+        // Submit the form with 'next' action
+        var form = $('#assessmentForm');
+        var actionInput = $('<input>').attr({
+            type: 'hidden',
+            name: 'action',
+            value: 'next'
+        });
+        form.append(actionInput);
+        form.submit();
+    }
+</script>
+{% endblock %}

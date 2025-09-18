@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+
+{% block title %}Course List{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1">All Courses</h2>
+                            <p class="text-muted mb-0">Manage your course assessments</p>
+                        </div>
+                        <div class="text-end">
+                            <a href="{% url 'uca_app:course_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create New Course
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-list me-2"></i>My Courses
+                        </h4>
+                        <div class="d-flex gap-2">
+                            <form method="get" class="d-flex">
+                                <select name="term" class="form-select" onchange="this.form.submit()">
+                                    <option value="">All Terms</option>
+                                    {% for term in unique_terms %}
+                                        <option value="{{ term }}" {% if term == selected_term %}selected{% endif %}>
+                                            {{ term }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Course Name</th>
+                                        <th>Code</th>
+                                        <th>Term/Semester</th>
+                                        <th>Coordinator</th>
+                                        <th>Sections</th>
+                                        <th>Students</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for course in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ course.name }}</strong>
+                                        </td>
+                                        <td>{{ course.code|default:"-" }}</td>
+                                        <td>
+                                            <span class="badge bg-info">{{ course.term_semester }}</span>
+                                        </td>
+                                        <td>{{ course.coordinator|default:"-" }}</td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ course.sections.count }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">{{ course.total_students }}</span>
+                                        </td>
+                                        <td>{{ course.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'uca_app:course_detail' course.id %}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'uca_app:course_edit' course.id %}" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        data-bs-toggle="modal" data-bs-target="#deleteModal{{ course.id }}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <nav aria-label="Course pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                            <h4 class="text-muted">No courses found</h4>
+                            <p class="text-muted">Create your first course to get started.</p>
+                            <a href="{% url 'uca_app:course_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create Course
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modals -->
+{% for course in page_obj %}
+<div class="modal fade" id="deleteModal{{ course.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ course.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel{{ course.id }}">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Course Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone!
+                </div>
+                <p>Are you sure you want to delete the course:</p>
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ course.name }}</h6>
+                        <p class="card-text mb-1">
+                            <strong>Code:</strong> {{ course.code|default:"Not specified" }}<br>
+                            <strong>Term:</strong> {{ course.term_semester }}<br>
+                            <strong>Sections:</strong> {{ course.sections.count }}<br>
+                            <strong>Students:</strong> {{ course.total_students }}
+                        </p>
+                    </div>
+                </div>
+                <p class="mt-3 mb-0">
+                    <strong>This will permanently delete:</strong>
+                </p>
+                <ul class="mb-0">
+                    <li>Course information and configuration</li>
+                    <li>All sections and student data</li>
+                    <li>All assessments and grades</li>
+                    <li>All reports and analysis data</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <form method="post" action="{% url 'uca_app:course_delete' course.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Delete Course
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

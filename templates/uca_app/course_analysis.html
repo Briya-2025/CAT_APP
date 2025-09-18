@@ -1,0 +1,529 @@
+{% extends 'base.html' %}
+
+{% block title %}Course Analysis - {{ course.name }}{% endblock %}
+
+{% block content %}
+<form method="post">
+    {% csrf_token %}
+    <div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1">{{ course.name }}</h2>
+                            <p class="text-muted mb-0">{{ course.code }} - {{ course.term_semester }}</p>
+                        </div>
+                        <div class="text-end">
+                            <a href="{% url 'uca_app:edit_sections' course.id %}" class="btn btn-outline-primary me-2">
+                                <i class="fas fa-edit me-2"></i>Edit Sections
+                            </a>
+                            <a href="{% url 'uca_app:course_assessments' course.id %}" class="btn btn-secondary me-2">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Assessments
+                            </a>
+                            <button type="submit" name="action" value="save_analysis" class="btn btn-info me-2">
+                                <i class="fas fa-save me-2"></i>Save Analysis
+                            </button>
+                            <button type="submit" name="action" value="next" class="btn btn-success">
+                                <i class="fas fa-arrow-right me-2"></i>Next: Grade Distribution
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3>{{ course.sections.count }}</h3>
+                <p class="mb-0">Total Sections</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3>{{ total_students }}</h3>
+                <p class="mb-0">Total Students</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3>{{ config.get_total_weight|floatformat:1 }}%</h3>
+                <p class="mb-0">Total Weight</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3>{{ section_stats|length }}</h3>
+                <p class="mb-0">Sections Analyzed</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section Statistics Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-table me-2"></i>Section Statistics
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Section</th>
+                                    <th>Instructor</th>
+                                    <th>Students</th>
+                                    <th>Quiz %</th>
+                                    <th>Assign %</th>
+                                    <th>HW %</th>
+                                    <th>Midterm %</th>
+                                    <th>Final %</th>
+                                    <th>Lab %</th>
+                                    <th>Weighted %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in section_stats %}
+                                <tr>
+                                    <td><strong>Section {{ stat.section.section_number }}</strong></td>
+                                    <td>{{ stat.section.instructor }}</td>
+                                    <td>{{ stat.section.total_students }}</td>
+                                    <td>{{ stat.quiz_percentage }}</td>
+                                    <td>{{ stat.assignment_percentage }}</td>
+                                    <td>{{ stat.hw_percentage }}</td>
+                                    <td>{{ stat.midterm_percentage }}</td>
+                                    <td>{{ stat.final_percentage }}</td>
+                                    <td>{{ stat.lab_percentage }}</td>
+                                    <td><strong>{{ stat.weighted_score }}</strong></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Overall Course Statistics
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Toggle Buttons -->
+                    <div class="mb-3">
+                        <div class="btn-group" role="group" aria-label="Assessment Type Toggle">
+                            <input type="checkbox" class="btn-check" id="toggleQuiz" checked>
+                            <label class="btn btn-outline-primary" for="toggleQuiz" style="border-color: #55C2C3; color: #000000;">Quiz Avg</label>
+                            
+                            {% if config.assignment_weight > 0 %}
+                            <input type="checkbox" class="btn-check" id="toggleAssignment" checked>
+                            <label class="btn btn-outline-primary" for="toggleAssignment" style="border-color: #84bd96; color: #000000;">Assign Avg</label>
+                            {% endif %}
+                            
+                            <input type="checkbox" class="btn-check" id="toggleHW" checked>
+                            <label class="btn btn-outline-primary" for="toggleHW" style="border-color: #C7E1F3; color: #000000;">HW Avg</label>
+                            
+                            <input type="checkbox" class="btn-check" id="toggleMidterm" checked>
+                            <label class="btn btn-outline-primary" for="toggleMidterm" style="border-color: #f4b3ad; color: #000000;">Midterm Avg</label>
+                            
+                            <input type="checkbox" class="btn-check" id="toggleFinal" checked>
+                            <label class="btn btn-outline-primary" for="toggleFinal" style="border-color: #9ee8e8; color: #000000;">Final Avg</label>
+                            
+                            <input type="checkbox" class="btn-check" id="toggleLab" checked>
+                            <label class="btn btn-outline-primary" for="toggleLab" style="border-color: #cfaedd; color: #000000;">Lab Avg</label>
+                            
+                            <input type="checkbox" class="btn-check" id="toggleWeighted" checked>
+                            <label class="btn btn-outline-primary" for="toggleWeighted" style="border-color: #696969; color: #000000;">Weighted</label>
+                        </div>
+                        
+                        <!-- Save Chart Button -->
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-success" onclick="saveCurrentChart()">
+                                <i class="fas fa-save me-2"></i>Save Chart for PDF Report
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Chart Container -->
+                    <div id="comprehensiveChart" style="height: 650px; border-radius: 15px; backdrop-filter: blur(10px); background: rgba(255,255,255,0.1); padding: 20px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+/* Custom styles for toggle buttons - keep original colors, black text only */
+#toggleQuiz:checked + label {
+    background-color: #55C2C3 !important;
+    border-color: #55C2C3 !important;
+    color: #000000 !important;
+}
+
+#toggleAssignment:checked + label {
+    background-color: #A2C4AD !important;
+    border-color: #A2C4AD !important;
+    color: #000000 !important;
+}
+
+#toggleHW:checked + label {
+    background-color: #C7E1F3 !important;
+    border-color: #C7E1F3 !important;
+    color: #000000 !important;
+}
+
+#toggleMidterm:checked + label {
+    background-color: #F0C4C0 !important;
+    border-color: #F0C4C0 !important;
+    color: #000000 !important;
+}
+
+#toggleFinal:checked + label {
+    background-color: #BDE3E3 !important;
+    border-color: #BDE3E3 !important;
+    color: #000000 !important;
+}
+
+#toggleLab:checked + label {
+    background-color: #DBC6E4 !important;
+    border-color: #DBC6E4 !important;
+    color: #000000 !important;
+}
+
+#toggleWeighted:checked + label {
+    background-color: #696969 !important;
+    border-color: #696969 !important;
+    color: #000000 !important;
+}
+
+/* Enhanced glass effect for chart container with black border */
+#comprehensiveChart {
+    backdrop-filter: blur(15px);
+    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
+    border: 1px solid #000000;
+    box-shadow: 
+        0 8px 32px rgba(0,0,0,0.2),
+        inset 0 1px 0 rgba(255,255,255,0.3);
+    border-radius: 15px;
+    position: relative;
+    overflow: hidden;
+}
+
+#comprehensiveChart::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    pointer-events: none;
+    z-index: 1;
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize comprehensive chart
+    initializeComprehensiveChart();
+    
+    // Add event listeners for toggle buttons
+    setupToggleButtons();
+});
+
+function initializeComprehensiveChart() {
+    // Get section data from Django template
+    const sectionData = {{ section_stats_json|safe }};
+    
+    console.log('Section data:', sectionData); // Debug log
+    
+    if (!sectionData || sectionData.length === 0) {
+        document.getElementById('comprehensiveChart').innerHTML = '<div class="text-center p-4"><p class="text-muted">No data available for chart</p></div>';
+        return;
+    }
+    
+    // Create comprehensive chart data
+    const chartData = [];
+    const sections = sectionData.map(stat => `Section ${stat.section.section_number}`);
+    
+    // Define assessment types and their colors (matching toggle button colors)
+    const assessmentTypes = [
+        { key: 'quiz_percentage', name: 'Quiz Avg', color: '#55C2C3' },
+        {% if config.assignment_weight > 0 %}
+        { key: 'assignment_percentage', name: 'Assign Avg', color: '#A2C4AD' },
+        {% endif %}
+        { key: 'hw_percentage', name: 'HW Avg', color: '#C7E1F3' },
+        { key: 'midterm_percentage', name: 'Midterm Avg', color: '#F0C4C0' },
+        { key: 'final_percentage', name: 'Final Avg', color: '#BDE3E3' },
+        { key: 'lab_percentage', name: 'Lab Avg', color: '#DBC6E4' },
+        { key: 'weighted_score', name: 'Weighted', color: '#696969' }
+    ];
+    
+    // Create traces for each assessment type with gradient effect
+    assessmentTypes.forEach(assessment => {
+        const values = sectionData.map(stat => stat[assessment.key]);
+        
+        // Set assignment trace as not visible by default (if it exists)
+        const isVisible = assessment.name !== 'Assign Avg';
+        
+        chartData.push({
+            x: sections,
+            y: values,
+            type: 'bar',
+            name: assessment.name,
+            marker: { 
+                color: assessment.color,
+                opacity: 0.8,
+                line: { 
+                    color: darkenColor(assessment.color, 0.4), 
+                    width: 2
+                }
+            },
+            visible: isVisible
+        });
+    });
+    
+    // Create layout with enhanced styling
+    const layout = {
+        title: {
+            text: 'Course Performance Analysis by Section',
+            font: { size: 20, color: '#000000' },
+            x: 0.5,
+            xanchor: 'center'
+        },
+        xaxis: {
+            title: {
+                text: 'Sections',
+                font: { size: 18, color: '#000000' }
+            },
+            tickfont: { size: 16, color: '#000000' },
+            showgrid: true,
+            gridcolor: 'rgba(0,0,0,0.1)',
+            showline: true,
+            linecolor: '#000000',
+            linewidth: 1,
+            mirror: true
+        },
+        yaxis: {
+            title: {
+                text: 'Percentage (%)',
+                font: { size: 18, color: '#000000' }
+            },
+            tickfont: { size: 16, color: '#000000' },
+            showgrid: true,
+            gridcolor: 'rgba(0,0,0,0.1)',
+            showline: true,
+            linecolor: '#000000',
+            linewidth: 1,
+            mirror: true
+        },
+        barmode: 'group',
+        showlegend: true,
+        height: 650,
+        plot_bgcolor: 'rgba(255,255,255,0.2)',
+        paper_bgcolor: 'rgba(255,255,255,0.1)',
+        font: { color: '#333' },
+        legend: {
+            bgcolor: 'rgba(255,255,255,0.9)',
+            bordercolor: 'rgba(0,0,0,0.4)',
+            borderwidth: 2,
+            x: 0.5,
+            y: 1.02,
+            xanchor: 'center',
+            yanchor: 'bottom',
+            orientation: 'h',
+            font: { size: 12 }
+        }
+    };
+    
+    // Plot the chart
+    Plotly.newPlot('comprehensiveChart', chartData, layout, {responsive: true});
+}
+
+function setupToggleButtons() {
+    const toggles = {
+        'toggleQuiz': 'Quiz Avg',
+        'toggleAssignment': 'Assign Avg',
+        'toggleHW': 'HW Avg',
+        'toggleMidterm': 'Midterm Avg',
+        'toggleFinal': 'Final Avg',
+        'toggleLab': 'Lab Avg',
+        'toggleWeighted': 'Weighted'
+    };
+    
+    Object.keys(toggles).forEach(toggleId => {
+        const toggle = document.getElementById(toggleId);
+        if (toggle) {
+            toggle.addEventListener('change', function() {
+                const traceName = toggles[toggleId];
+                const isVisible = this.checked;
+                
+                // Update chart visibility
+                Plotly.restyle('comprehensiveChart', {visible: isVisible}, [getTraceIndex(traceName)]);
+            });
+        }
+    });
+}
+
+function getTraceIndex(traceName) {
+    const assessmentTypes = [
+        'Quiz Avg', 'Assign Avg', 'HW Avg', 'Midterm Avg', 
+        'Final Avg', 'Lab Avg', 'Weighted'
+    ];
+    return assessmentTypes.indexOf(traceName);
+}
+
+function darkenColor(color, factor) {
+    // Remove # if present
+    color = color.replace('#', '');
+    
+    // Convert to RGB
+    const r = parseInt(color.substr(0, 2), 16);
+    const g = parseInt(color.substr(2, 2), 16);
+    const b = parseInt(color.substr(4, 2), 16);
+    
+    // Darken by factor
+    const newR = Math.floor(r * (1 - factor));
+    const newG = Math.floor(g * (1 - factor));
+    const newB = Math.floor(b * (1 - factor));
+    
+    // Convert back to hex
+    return '#' + 
+        newR.toString(16).padStart(2, '0') + 
+        newG.toString(16).padStart(2, '0') + 
+        newB.toString(16).padStart(2, '0');
+}
+
+function saveCurrentChart() {
+    console.log('saveCurrentChart function called');
+    
+    let toggleStates;
+    try {
+        // Check which toggle elements exist
+        const toggleElements = {
+            quiz: document.getElementById('toggleQuiz'),
+            assignment: document.getElementById('toggleAssignment'),
+            hw: document.getElementById('toggleHW'),
+            midterm: document.getElementById('toggleMidterm'),
+            final: document.getElementById('toggleFinal'),
+            lab: document.getElementById('toggleLab'),
+            weighted: document.getElementById('toggleWeighted')
+        };
+        
+        console.log('Toggle elements found:', Object.keys(toggleElements).filter(key => toggleElements[key] !== null));
+        console.log('Missing toggle elements:', Object.keys(toggleElements).filter(key => toggleElements[key] === null));
+        
+        // Get current toggle states - handle missing elements gracefully
+        toggleStates = {
+
+            quiz: toggleElements.quiz?.checked || false,
+            assignment: toggleElements.assignment?.checked || false,
+            hw: toggleElements.hw?.checked || false,
+            midterm: toggleElements.midterm?.checked || false,
+            final: toggleElements.final?.checked || false,
+            lab: toggleElements.lab?.checked || false,
+            weighted: toggleElements.weighted?.checked || false
+
+        };
+        
+        console.log('Toggle states:', toggleStates);
+    } catch (error) {
+        console.error('Error getting toggle states:', error);
+        alert('Error getting toggle states: ' + error.message);
+        return;
+    }
+    
+    // Show loading message
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving Chart...';
+    button.disabled = true;
+    
+    // Send AJAX request to save chart with current toggle states
+    let csrfToken, requestData;
+    try {
+        const csrfTokenElement = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (!csrfTokenElement) {
+            throw new Error('CSRF token not found');
+        }
+        csrfToken = csrfTokenElement.value;
+        console.log('CSRF Token:', csrfToken);
+        
+        requestData = {
+            action: 'save_chart',
+            toggle_states: toggleStates
+        };
+        console.log('Request data:', requestData);
+    } catch (error) {
+        console.error('Error preparing request:', error);
+        alert('Error preparing request: ' + error.message);
+        button.innerHTML = originalText;
+        button.disabled = false;
+        return;
+    }
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            // Show success message
+            button.innerHTML = '<i class="fas fa-check me-2"></i>Chart Saved!';
+            button.classList.remove('btn-success');
+            button.classList.add('btn-success');
+            
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }, 2000);
+        } else {
+            throw new Error(data.error || 'Failed to save chart');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving chart:', error);
+        console.error('Error details:', error.message);
+        button.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Error Saving';
+        button.classList.remove('btn-success');
+        button.classList.add('btn-danger');
+        
+        // Reset button after 3 seconds
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+            button.classList.remove('btn-danger');
+            button.classList.add('btn-success');
+        }, 3000);
+    });
+}
+</script>
+{% endblock %}

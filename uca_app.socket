@@ -1,0 +1,13 @@
+[Unit]
+Description=UCA App Gunicorn socket
+
+[Socket]
+ListenStream=/run/gunicorn/uca_app.sock
+# Our service won't need permissions for the socket, since it
+# inherits the file descriptor from systemd.
+SocketUser=www-data
+# Optionally restrict the socket permissions even more.
+# SocketMode=600
+
+[Install]
+WantedBy=sockets.target

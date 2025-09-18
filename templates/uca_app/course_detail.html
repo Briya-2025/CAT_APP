@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block title %}Course Details - {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1">{{ course.name }}</h2>
+                            <p class="text-muted mb-0">{{ course.code }} - {{ course.term_semester }}</p>
+                            <p class="text-muted mb-0">Coordinator: {{ course.coordinator|default:"Not specified" }}</p>
+                        </div>
+                        <div class="text-end">
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'uca_app:course_edit' course.id %}" class="btn btn-secondary">
+                                    <i class="fas fa-edit me-2"></i>Edit Course
+                                </a>
+                                <a href="{% url 'uca_app:course_analysis' course.id %}" class="btn btn-primary">
+                                    <i class="fas fa-chart-bar me-2"></i>View Analysis
+                                </a>
+                                <button type="button" class="btn btn-danger" 
+                                        data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                    <i class="fas fa-trash me-2"></i>Delete Course
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Information -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Course Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Course Name:</strong></td>
+                            <td>{{ course.name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Course Code:</strong></td>
+                            <td>{{ course.code|default:"Not specified" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Term/Semester:</strong></td>
+                            <td>{{ course.term_semester }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Coordinator:</strong></td>
+                            <td>{{ course.coordinator|default:"Not specified" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Created:</strong></td>
+                            <td>{{ course.created_at|date:"F d, Y" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Last Updated:</strong></td>
+                            <td>{{ course.updated_at|date:"F d, Y" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>Configuration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Number of Sections:</strong></td>
+                            <td>{{ course.configuration.num_sections }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Number of Quizzes:</strong></td>
+                            <td>{{ course.configuration.num_quizzes }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Number of Assignments:</strong></td>
+                            <td>{{ course.configuration.num_assignments }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Quiz Weight:</strong></td>
+                            <td>{{ course.configuration.quiz_weight }}%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Assignment Weight:</strong></td>
+                            <td>{{ course.configuration.assignment_weight }}%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Homework Weight:</strong></td>
+                            <td>{{ course.configuration.hw_weight }}%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Midterm Weight:</strong></td>
+                            <td>{{ course.configuration.midterm_weight }}%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Final Weight:</strong></td>
+                            <td>{{ course.configuration.final_weight }}%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Lab Weight:</strong></td>
+                            <td>{{ course.configuration.lab_weight }}%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Weight:</strong></td>
+                            <td><strong>{{ course.configuration.get_total_weight }}%</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sections -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Course Sections ({{ sections.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if sections %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Section Number</th>
+                                        <th>Instructor</th>
+                                        <th>Total Students</th>
+                                        <th>Assessments</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for section in sections %}
+                                    <tr>
+                                        <td><strong>Section {{ section.section_number }}</strong></td>
+                                        <td>{{ section.instructor }}</td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ section.total_students }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ section.assessments.count }}</span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'uca_app:course_analysis' course.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-chart-bar"></i> View Analysis
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-users fa-2x text-muted mb-3"></i>
+                            <h5 class="text-muted">No sections found</h5>
+                            <p class="text-muted">This course doesn't have any sections yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Course Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone!
+                </div>
+                <p>Are you sure you want to delete the course:</p>
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ course.name }}</h6>
+                        <p class="card-text mb-1">
+                            <strong>Code:</strong> {{ course.code|default:"Not specified" }}<br>
+                            <strong>Term:</strong> {{ course.term_semester }}<br>
+                            <strong>Sections:</strong> {{ course.sections.count }}<br>
+                            <strong>Students:</strong> {{ course.total_students|default:0 }}
+                        </p>
+                    </div>
+                </div>
+                <p class="mt-3 mb-0">
+                    <strong>This will permanently delete:</strong>
+                </p>
+                <ul class="mb-0">
+                    <li>Course information and configuration</li>
+                    <li>All sections and student data</li>
+                    <li>All assessments and grades</li>
+                    <li>All reports and analysis data</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <form method="post" action="{% url 'uca_app:course_delete' course.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Delete Course
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

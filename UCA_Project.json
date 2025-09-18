@@ -1,0 +1,193 @@
+{
+  "course": {
+    "Course Name:": "fs",
+    "Course Code:": "sfdfdg",
+    "Term / Semester:": "d",
+    "Course Coordinator:": "s"
+  },
+  "sec": 5,
+  "quiz": 4,
+  "assign": 0,
+  "weights": {
+    "Quiz": 15.0,
+    "Assign": 15.0,
+    "HW": 10.0,
+    "Midterm": 30.0,
+    "Final": 25.0,
+    "Lab": 5.0
+  },
+  "sections": [
+    {
+      "instructor": "",
+      "students": "",
+      "Quiz 1_max": 15.0,
+      "Quiz 1_avg": 0.0,
+      "Quiz 2_max": 15.0,
+      "Quiz 2_avg": 5.0,
+      "Quiz 3_max": 15.0,
+      "Quiz 3_avg": 0.0,
+      "Quiz 4_max": 15.0,
+      "Quiz 4_avg": 0.0,
+      "HW_max": 6.0,
+      "HW_avg": 0.0,
+      "Midterm_max": 45.0,
+      "Midterm_avg": 0.0,
+      "Final_max": 45.0,
+      "Final_avg": 0.0,
+      "Lab_max": 20.0,
+      "Lab_avg": 0.0
+    },
+    {
+      "instructor": "",
+      "students": "",
+      "Quiz 1_max": 15.0,
+      "Quiz 1_avg": 0.0,
+      "Quiz 2_max": 15.0,
+      "Quiz 2_avg": 0.5,
+      "Quiz 3_max": 15.0,
+      "Quiz 3_avg": 0.0,
+      "Quiz 4_max": 15.0,
+      "Quiz 4_avg": 0.0,
+      "HW_max": 6.0,
+      "HW_avg": 0.0,
+      "Midterm_max": 45.0,
+      "Midterm_avg": 0.0,
+      "Final_max": 45.0,
+      "Final_avg": 0.0,
+      "Lab_max": 20.0,
+      "Lab_avg": 0.0
+    },
+    {
+      "instructor": "",
+      "students": "",
+      "Quiz 1_max": 15.0,
+      "Quiz 1_avg": 0.0,
+      "Quiz 2_max": 15.0,
+      "Quiz 2_avg": 0.5,
+      "Quiz 3_max": 15.0,
+      "Quiz 3_avg": 0.0,
+      "Quiz 4_max": 15.0,
+      "Quiz 4_avg": 0.0,
+      "HW_max": 6.0,
+      "HW_avg": 0.0,
+      "Midterm_max": 45.0,
+      "Midterm_avg": 0.0,
+      "Final_max": 45.0,
+      "Final_avg": 0.0,
+      "Lab_max": 20.0,
+      "Lab_avg": 0.0
+    },
+    {
+      "instructor": "",
+      "students": "",
+      "Quiz 1_max": 15.0,
+      "Quiz 1_avg": 0.0,
+      "Quiz 2_max": 15.0,
+      "Quiz 2_avg": 0.0,
+      "Quiz 3_max": 15.0,
+      "Quiz 3_avg": 0.0,
+      "Quiz 4_max": 15.0,
+      "Quiz 4_avg": 0.0,
+      "HW_max": 6.0,
+      "HW_avg": 0.0,
+      "Midterm_max": 45.0,
+      "Midterm_avg": 0.0,
+      "Final_max": 45.0,
+      "Final_avg": 0.0,
+      "Lab_max": 20.0,
+      "Lab_avg": 0.0
+    },
+    {
+      "instructor": "",
+      "students": "",
+      "Quiz 1_max": 15.0,
+      "Quiz 1_avg": 0.0,
+      "Quiz 2_max": 15.0,
+      "Quiz 2_avg": 0.0,
+      "Quiz 3_max": 15.0,
+      "Quiz 3_avg": 0.0,
+      "Quiz 4_max": 15.0,
+      "Quiz 4_avg": 0.0,
+      "HW_max": 6.0,
+      "HW_avg": 0.0,
+      "Midterm_max": 45.0,
+      "Midterm_avg": 0.0,
+      "Final_max": 45.0,
+      "Final_avg": 0.0,
+      "Lab_max": 20.0,
+      "Lab_avg": 0.0
+    }
+  ],
+  "grades": [
+    [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      8,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      9,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  ]
+}

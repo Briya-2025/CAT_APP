@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if is_editing %}Edit Course{% else %}Create New Course{% endif %} - Unified Course Assessment{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-15">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        {% if is_editing %}
+                            <i class="fas fa-edit me-2"></i>Edit Course: {{ editing_course.name }}
+                        {% else %}
+                            <i class="fas fa-plus me-2"></i>Create New Course
+                        {% endif %}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Course Information</h5>
+                                {{ course_form|crispy }}
+                            </div>
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Course Configuration</h5>
+                                
+                                <!-- Number of sections, quizzes, assignments -->
+                                <div class="row mb-3">
+                                    <div class="col-4">
+                                        <label for="{{ config_form.num_sections.id_for_label }}" class="form-label">Number of Sections</label>
+                                        {{ config_form.num_sections }}
+                                    </div>
+                                    <div class="col-4">
+                                        <label for="{{ config_form.num_quizzes.id_for_label }}" class="form-label">Number of Quizzes</label>
+                                        {{ config_form.num_quizzes }}
+                                    </div>
+                                    <div class="col-4">
+                                        <label for="{{ config_form.num_assignments.id_for_label }}" class="form-label">Number of Assignments</label>
+                                        {{ config_form.num_assignments }}
+                                    </div>
+                                </div>
+                                
+                                <!-- Weight configuration - Horizontal layout -->
+                                <h6 class="mb-3">Component Weights</h6>
+                                <div class="row mb-2">
+                                    <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
+                                        <label for="{{ config_form.quiz_weight.id_for_label }}" class="form-label small">Quiz*</label>
+                                        {{ config_form.quiz_weight }}
+                                    </div>
+                                    <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
+                                        <label for="{{ config_form.assignment_weight.id_for_label }}" class="form-label small">Assignment*</label>
+                                        {{ config_form.assignment_weight }}
+                                    </div>
+                                    <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
+                                        <label for="{{ config_form.hw_weight.id_for_label }}" class="form-label small">HW*</label>
+                                        {{ config_form.hw_weight }}
+                                    </div>
+                                    <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
+                                        <label for="{{ config_form.midterm_weight.id_for_label }}" class="form-label small">Midterm*</label>
+                                        {{ config_form.midterm_weight }}
+                                    </div>
+                                    <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
+                                        <label for="{{ config_form.final_weight.id_for_label }}" class="form-label small">Final*</label>
+                                        {{ config_form.final_weight }}
+                                    </div>
+                                    <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
+                                        <label for="{{ config_form.lab_weight.id_for_label }}" class="form-label small">Lab*</label>
+                                        {{ config_form.lab_weight }}
+                                    </div>
+                                </div>
+                                
+                                <div class="weight-sum mt-3" id="weightSum">
+                                    Total Weight: 0.00%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            {% if is_editing %}
+                                <button type="submit" name="action" value="back" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Course Detail
+                                </button>
+                            {% else %}
+                                <button type="submit" name="action" value="back" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Home
+                                </button>
+                            {% endif %}
+                            <button type="submit" name="action" value="save" class="btn btn-outline-primary me-2">
+                                <i class="fas fa-save me-2"></i>Save Course
+                            </button>
+                            <button type="submit" name="action" value="next" class="btn btn-primary btn-calculate" disabled>
+                                <i class="fas fa-arrow-right me-2"></i>Next: Add Sections
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .weight-sum {
+        font-weight: bold;
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+        margin-top: 15px;
+    }
+    
+    .weight-sum.valid {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .weight-sum.invalid {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .form-label.small {
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        white-space: nowrap;
+        text-align: center;
+        display: block;
+    }
+    
+    .weight-input {
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+        width: 100%;
+    }
+    
+    .row.mb-2 .col-lg-2 {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    /* Ensure proper spacing for weight components */
+    .row.mb-2 > div {
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Weight validation
+        $('.weight-input').on('input', function() {
+            let total = 0;
+            $('.weight-input').each(function() {
+                total += parseFloat($(this).val()) || 0;
+            });
+            
+            const weightSum = $('#weightSum');
+            weightSum.text(`Total Weight: ${total.toFixed(2)}%`);
+            
+            if (Math.abs(total - 100) < 0.01) {
+                weightSum.removeClass('invalid').addClass('valid');
+                $('.btn-calculate').prop('disabled', false);
+            } else {
+                weightSum.removeClass('valid').addClass('invalid');
+                $('.btn-calculate').prop('disabled', true);
+            }
+        });
+        
+        // Initialize weight calculation
+        $('.weight-input').trigger('input');
+    });
+</script>
+{% endblock %}
