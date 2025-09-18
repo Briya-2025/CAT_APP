@@ -81,12 +81,24 @@
                                     <th>Section</th>
                                     <th>Instructor</th>
                                     <th>Students</th>
+                                    {% if config.quiz_weight > 0 and config.num_quizzes > 0 %}
                                     <th>Quiz %</th>
+                                    {% endif %}
+                                    {% if config.assignment_weight > 0 and config.num_assignments > 0 %}
                                     <th>Assign %</th>
+                                    {% endif %}
+                                    {% if config.hw_weight > 0 %}
                                     <th>HW %</th>
+                                    {% endif %}
+                                    {% if config.midterm_weight > 0 %}
                                     <th>Midterm %</th>
+                                    {% endif %}
+                                    {% if config.final_weight > 0 %}
                                     <th>Final %</th>
+                                    {% endif %}
+                                    {% if config.lab_weight > 0 %}
                                     <th>Lab %</th>
+                                    {% endif %}
                                     <th>Weighted %</th>
                                 </tr>
                             </thead>
@@ -96,12 +108,24 @@
                                     <td><strong>Section {{ stat.section.section_number }}</strong></td>
                                     <td>{{ stat.section.instructor }}</td>
                                     <td>{{ stat.section.total_students }}</td>
+                                    {% if config.quiz_weight > 0 and config.num_quizzes > 0 %}
                                     <td>{{ stat.quiz_percentage }}</td>
+                                    {% endif %}
+                                    {% if config.assignment_weight > 0 and config.num_assignments > 0 %}
                                     <td>{{ stat.assignment_percentage }}</td>
+                                    {% endif %}
+                                    {% if config.hw_weight > 0 %}
                                     <td>{{ stat.hw_percentage }}</td>
+                                    {% endif %}
+                                    {% if config.midterm_weight > 0 %}
                                     <td>{{ stat.midterm_percentage }}</td>
+                                    {% endif %}
+                                    {% if config.final_weight > 0 %}
                                     <td>{{ stat.final_percentage }}</td>
+                                    {% endif %}
+                                    {% if config.lab_weight > 0 %}
                                     <td>{{ stat.lab_percentage }}</td>
+                                    {% endif %}
                                     <td><strong>{{ stat.weighted_score }}</strong></td>
                                 </tr>
                                 {% endfor %}
@@ -126,25 +150,35 @@
                     <!-- Toggle Buttons -->
                     <div class="mb-3">
                         <div class="btn-group" role="group" aria-label="Assessment Type Toggle">
+                            {% if config.quiz_weight > 0 and config.num_quizzes > 0 %}
                             <input type="checkbox" class="btn-check" id="toggleQuiz" checked>
                             <label class="btn btn-outline-primary" for="toggleQuiz" style="border-color: #55C2C3; color: #000000;">Quiz Avg</label>
+                            {% endif %}
                             
-                            {% if config.assignment_weight > 0 %}
+                            {% if config.assignment_weight > 0 and config.num_assignments > 0 %}
                             <input type="checkbox" class="btn-check" id="toggleAssignment" checked>
                             <label class="btn btn-outline-primary" for="toggleAssignment" style="border-color: #84bd96; color: #000000;">Assign Avg</label>
                             {% endif %}
                             
+                            {% if config.hw_weight > 0 %}
                             <input type="checkbox" class="btn-check" id="toggleHW" checked>
                             <label class="btn btn-outline-primary" for="toggleHW" style="border-color: #C7E1F3; color: #000000;">HW Avg</label>
+                            {% endif %}
                             
+                            {% if config.midterm_weight > 0 %}
                             <input type="checkbox" class="btn-check" id="toggleMidterm" checked>
                             <label class="btn btn-outline-primary" for="toggleMidterm" style="border-color: #f4b3ad; color: #000000;">Midterm Avg</label>
+                            {% endif %}
                             
+                            {% if config.final_weight > 0 %}
                             <input type="checkbox" class="btn-check" id="toggleFinal" checked>
                             <label class="btn btn-outline-primary" for="toggleFinal" style="border-color: #9ee8e8; color: #000000;">Final Avg</label>
+                            {% endif %}
                             
+                            {% if config.lab_weight > 0 %}
                             <input type="checkbox" class="btn-check" id="toggleLab" checked>
                             <label class="btn btn-outline-primary" for="toggleLab" style="border-color: #cfaedd; color: #000000;">Lab Avg</label>
+                            {% endif %}
                             
                             <input type="checkbox" class="btn-check" id="toggleWeighted" checked>
                             <label class="btn btn-outline-primary" for="toggleWeighted" style="border-color: #696969; color: #000000;">Weighted</label>
@@ -241,12 +275,57 @@
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Check for weight changes and refresh if needed
+    checkForWeightChanges();
+    
     // Initialize comprehensive chart
     initializeComprehensiveChart();
     
     // Add event listeners for toggle buttons
     setupToggleButtons();
 });
+
+function checkForWeightChanges() {
+    console.log('Checking for weight changes...');
+    
+    // Check if there are weight changes stored in localStorage
+    const storedWeights = localStorage.getItem('course_weight_changes');
+    if (storedWeights) {
+        const weights = JSON.parse(storedWeights);
+        const currentTime = Date.now();
+        const timeDiff = currentTime - weights.timestamp;
+        
+        console.log('Found stored weights:', weights);
+        console.log('Time difference:', timeDiff, 'ms');
+        
+        // If weight changes are recent (within last 60 seconds), refresh the page
+        if (timeDiff < 60000) {
+            console.log('Weight changes detected, refreshing page...');
+            localStorage.removeItem('course_weight_changes'); // Clear after use
+            window.location.reload();
+            return;
+        }
+    }
+    
+    // Set up periodic check for weight changes (every 2 seconds for more responsive updates)
+    setInterval(function() {
+        const storedWeights = localStorage.getItem('course_weight_changes');
+        if (storedWeights) {
+            const weights = JSON.parse(storedWeights);
+            const currentTime = Date.now();
+            const timeDiff = currentTime - weights.timestamp;
+            
+            console.log('Periodic check - Time difference:', timeDiff, 'ms');
+            
+            // If weight changes are recent (within last 30 seconds), refresh the page
+            if (timeDiff < 30000) {
+                console.log('Periodic check: Weight changes detected, refreshing page...');
+                localStorage.removeItem('course_weight_changes'); // Clear after use
+                window.location.reload();
+            }
+        }
+    }, 2000); // Check every 2 seconds for more responsive updates
+}
 
 function initializeComprehensiveChart() {
     // Get section data from Django template
@@ -265,14 +344,24 @@ function initializeComprehensiveChart() {
     
     // Define assessment types and their colors (matching toggle button colors)
     const assessmentTypes = [
+        {% if config.quiz_weight > 0 %}
         { key: 'quiz_percentage', name: 'Quiz Avg', color: '#55C2C3' },
+        {% endif %}
         {% if config.assignment_weight > 0 %}
         { key: 'assignment_percentage', name: 'Assign Avg', color: '#A2C4AD' },
         {% endif %}
+        {% if config.hw_weight > 0 %}
         { key: 'hw_percentage', name: 'HW Avg', color: '#C7E1F3' },
+        {% endif %}
+        {% if config.midterm_weight > 0 %}
         { key: 'midterm_percentage', name: 'Midterm Avg', color: '#F0C4C0' },
+        {% endif %}
+        {% if config.final_weight > 0 %}
         { key: 'final_percentage', name: 'Final Avg', color: '#BDE3E3' },
+        {% endif %}
+        {% if config.lab_weight > 0 %}
         { key: 'lab_percentage', name: 'Lab Avg', color: '#DBC6E4' },
+        {% endif %}
         { key: 'weighted_score', name: 'Weighted', color: '#696969' }
     ];
     
@@ -296,7 +385,8 @@ function initializeComprehensiveChart() {
                     width: 2
                 }
             },
-            visible: isVisible
+            visible: isVisible,
+            showlegend: isVisible  // Control legend visibility based on trace visibility
         });
     });
     
@@ -349,24 +439,53 @@ function initializeComprehensiveChart() {
             xanchor: 'center',
             yanchor: 'bottom',
             orientation: 'h',
-            font: { size: 12 }
+            font: { size: 12 },
+            itemclick: false,  // Disable legend click interactions
+            itemdoubleclick: false  // Disable legend double-click interactions
         }
     };
     
+    // Debug: Log chart data to see trace order
+    console.log('Chart traces created:', chartData.map((trace, index) => `${index}: ${trace.name}`));
+    
     // Plot the chart
     Plotly.newPlot('comprehensiveChart', chartData, layout, {responsive: true});
+    
+    // Synchronize UI toggle buttons with initial chart state
+    synchronizeToggleButtonsWithChart();
 }
 
 function setupToggleButtons() {
-    const toggles = {
-        'toggleQuiz': 'Quiz Avg',
-        'toggleAssignment': 'Assign Avg',
-        'toggleHW': 'HW Avg',
-        'toggleMidterm': 'Midterm Avg',
-        'toggleFinal': 'Final Avg',
-        'toggleLab': 'Lab Avg',
-        'toggleWeighted': 'Weighted'
-    };
+    // Only include toggles for assessment types that have non-zero weights/numbers
+    const toggles = {};
+    
+    // Check each assessment type and only add to toggles if it should be visible
+    {% if config.quiz_weight > 0 and config.num_quizzes > 0 %}
+    toggles['toggleQuiz'] = 'Quiz Avg';
+    {% endif %}
+    
+    {% if config.assignment_weight > 0 and config.num_assignments > 0 %}
+    toggles['toggleAssignment'] = 'Assign Avg';
+    {% endif %}
+    
+    {% if config.hw_weight > 0 %}
+    toggles['toggleHW'] = 'HW Avg';
+    {% endif %}
+    
+    {% if config.midterm_weight > 0 %}
+    toggles['toggleMidterm'] = 'Midterm Avg';
+    {% endif %}
+    
+    {% if config.final_weight > 0 %}
+    toggles['toggleFinal'] = 'Final Avg';
+    {% endif %}
+    
+    {% if config.lab_weight > 0 %}
+    toggles['toggleLab'] = 'Lab Avg';
+    {% endif %}
+    
+    // Always include weighted
+    toggles['toggleWeighted'] = 'Weighted';
     
     Object.keys(toggles).forEach(toggleId => {
         const toggle = document.getElementById(toggleId);
@@ -374,20 +493,65 @@ function setupToggleButtons() {
             toggle.addEventListener('change', function() {
                 const traceName = toggles[toggleId];
                 const isVisible = this.checked;
+                const traceIndex = getTraceIndex(traceName);
+                
+                console.log(`Toggle ${toggleId} (${traceName}) -> Trace Index: ${traceIndex}, Visible: ${isVisible}`);
+                
+                if (traceIndex === -1) {
+                    console.error(`Trace not found for ${traceName}`);
+                    return;
+                }
                 
                 // Update chart visibility
-                Plotly.restyle('comprehensiveChart', {visible: isVisible}, [getTraceIndex(traceName)]);
+                Plotly.restyle('comprehensiveChart', {visible: isVisible}, [traceIndex]);
+                
+                // Update legend visibility to match UI button state
+                Plotly.restyle('comprehensiveChart', {
+                    'legendgroup': traceName,
+                    'showlegend': isVisible
+                }, [traceIndex]);
             });
+        } else {
+            console.log(`Toggle button ${toggleId} not found - assessment type likely has 0 weight or 0 number`);
         }
     });
 }
 
 function getTraceIndex(traceName) {
-    const assessmentTypes = [
-        'Quiz Avg', 'Assign Avg', 'HW Avg', 'Midterm Avg', 
-        'Final Avg', 'Lab Avg', 'Weighted'
-    ];
-    return assessmentTypes.indexOf(traceName);
+    // Get the actual chart data to find the correct index
+    const chartData = document.getElementById('comprehensiveChart').data;
+    for (let i = 0; i < chartData.length; i++) {
+        if (chartData[i].name === traceName) {
+            return i;
+        }
+    }
+    return -1; // Not found
+}
+
+function synchronizeToggleButtonsWithChart() {
+    // Get current chart data to check visibility states
+    const chartData = document.getElementById('comprehensiveChart').data;
+    
+    const toggleMapping = {
+        'Quiz Avg': 'toggleQuiz',
+        'Assign Avg': 'toggleAssignment', 
+        'HW Avg': 'toggleHW',
+        'Midterm Avg': 'toggleMidterm',
+        'Final Avg': 'toggleFinal',
+        'Lab Avg': 'toggleLab',
+        'Weighted': 'toggleWeighted'
+    };
+    
+    // Update UI toggle buttons to match chart visibility
+    chartData.forEach((trace, index) => {
+        const toggleId = toggleMapping[trace.name];
+        if (toggleId) {
+            const toggleElement = document.getElementById(toggleId);
+            if (toggleElement) {
+                toggleElement.checked = trace.visible !== false;
+            }
+        }
+    });
 }
 
 function darkenColor(color, factor) {

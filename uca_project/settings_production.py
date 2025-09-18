@@ -12,8 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-production-please-change-this-key-in-production-environment-very-long-and-secure-key-2024')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
-DEBUG = True 
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true' 
 
 # SSL/HTTPS Configuration - Set based on environment
 USE_HTTPS = os.environ.get('USE_HTTPS', 'False').lower() == 'true'

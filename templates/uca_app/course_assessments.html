@@ -18,6 +18,9 @@
                             <a href="{% url 'uca_app:course_sections' course.id %}" class="btn btn-secondary me-2">
                                 <i class="fas fa-arrow-left me-2"></i>Back to Sections
                             </a>
+                            <button type="button" class="btn btn-outline-info me-2" onclick="refreshPage()">
+                                <i class="fas fa-sync-alt me-2"></i>Refresh Data
+                            </button>
                             <button type="button" class="btn btn-outline-primary me-2" onclick="saveAssessments()">
                                 <i class="fas fa-save me-2"></i>Save Assessments
                             </button>
@@ -81,7 +84,59 @@
 
 {% block extra_js %}
 <script>
-    function collectAssessmentData() {
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for weight changes and refresh if needed
+    checkForWeightChanges();
+});
+
+function checkForWeightChanges() {
+    console.log('Checking for weight changes...');
+    
+    // Check if there are weight changes stored in localStorage
+    const storedWeights = localStorage.getItem('course_weight_changes');
+    if (storedWeights) {
+        const weights = JSON.parse(storedWeights);
+        const currentTime = Date.now();
+        const timeDiff = currentTime - weights.timestamp;
+        
+        console.log('Found stored weights:', weights);
+        console.log('Time difference:', timeDiff, 'ms');
+        
+        // If weight changes are recent (within last 60 seconds), refresh the page
+        if (timeDiff < 60000) {
+            console.log('Weight changes detected, refreshing page...');
+            localStorage.removeItem('course_weight_changes'); // Clear after use
+            window.location.reload();
+            return;
+        }
+    }
+    
+    // Set up periodic check for weight changes (every 2 seconds for more responsive updates)
+    setInterval(function() {
+        const storedWeights = localStorage.getItem('course_weight_changes');
+        if (storedWeights) {
+            const weights = JSON.parse(storedWeights);
+            const currentTime = Date.now();
+            const timeDiff = currentTime - weights.timestamp;
+            
+            console.log('Periodic check - Time difference:', timeDiff, 'ms');
+            
+            // If weight changes are recent (within last 30 seconds), refresh the page
+            if (timeDiff < 30000) {
+                console.log('Periodic check: Weight changes detected, refreshing page...');
+                localStorage.removeItem('course_weight_changes'); // Clear after use
+                window.location.reload();
+            }
+        }
+    }, 2000); // Check every 2 seconds for more responsive updates
+}
+
+function refreshPage() {
+    console.log('Manual refresh triggered');
+    window.location.reload();
+}
+
+function collectAssessmentData() {
         const assessmentData = {};
         const inputs = document.querySelectorAll('input[name^="max_marks_"], input[name^="average_marks_"]');
         

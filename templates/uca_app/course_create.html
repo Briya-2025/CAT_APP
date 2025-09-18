@@ -174,7 +174,26 @@
                 weightSum.removeClass('valid').addClass('invalid');
                 $('.btn-calculate').prop('disabled', true);
             }
+            
+            // Store weight changes for real-time updates
+            storeWeightChanges();
         });
+        
+        // Store weight changes in localStorage for real-time updates
+        function storeWeightChanges() {
+            const weights = {
+                quiz_weight: parseFloat($('#id_quiz_weight').val()) || 0,
+                assignment_weight: parseFloat($('#id_assignment_weight').val()) || 0,
+                hw_weight: parseFloat($('#id_hw_weight').val()) || 0,
+                midterm_weight: parseFloat($('#id_midterm_weight').val()) || 0,
+                final_weight: parseFloat($('#id_final_weight').val()) || 0,
+                lab_weight: parseFloat($('#id_lab_weight').val()) || 0,
+                timestamp: Date.now(),
+                course_id: '{{ editing_course.id|default:"" }}' // Include course ID for better tracking
+            };
+            localStorage.setItem('course_weight_changes', JSON.stringify(weights));
+            console.log('Weight changes stored:', weights);
+        }
         
         // Initialize weight calculation
         $('.weight-input').trigger('input');

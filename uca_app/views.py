@@ -410,61 +410,98 @@ def course_assessments(request, course_id):
         sections = course.sections.all()
     
     for section in sections:
-        if not section.assessments.exists():
-            # Create quiz assessments (only if num_quizzes > 0)
-            if config.num_quizzes > 0:
-                for i in range(1, config.num_quizzes + 1):
-                    Assessment.objects.create(
-                        section=section,
-                        assessment_type='quiz',
-                        assessment_number=i,
-                        max_marks=None,
-                        average_marks=None
-                    )
-            
-            # Create assignment assessments (only if num_assignments > 0)
-            if config.num_assignments > 0:
-                for i in range(1, config.num_assignments + 1):
-                    Assessment.objects.create(
-                        section=section,
-                        assessment_type='assignment',
-                        assessment_number=i,
-                        max_marks=None,
-                        average_marks=None
-                    )
-            
-            # Create other assessment types (always create these)
-            Assessment.objects.create(
+        # Always ensure assessments match the current configuration
+        # Clear existing assessments that don't match current config
+        existing_assessments = section.assessments.all()
+        
+        # Create quiz assessments (only if num_quizzes > 0 AND quiz_weight > 0)
+        if config.num_quizzes > 0 and config.quiz_weight > 0:
+            for i in range(1, config.num_quizzes + 1):
+                assessment, created = Assessment.objects.get_or_create(
+                    section=section,
+                    assessment_type='quiz',
+                    assessment_number=i,
+                    defaults={'max_marks': None, 'average_marks': None}
+                )
+                # If assessment exists but has no data, reset it
+                if not created and assessment.max_marks is None and assessment.average_marks is None:
+                    assessment.max_marks = None
+                    assessment.average_marks = None
+                    assessment.save()
+        
+        # Create assignment assessments (only if num_assignments > 0 AND assignment_weight > 0)
+        if config.num_assignments > 0 and config.assignment_weight > 0:
+            for i in range(1, config.num_assignments + 1):
+                assessment, created = Assessment.objects.get_or_create(
+                    section=section,
+                    assessment_type='assignment',
+                    assessment_number=i,
+                    defaults={'max_marks': None, 'average_marks': None}
+                )
+                # If assessment exists but has no data, reset it
+                if not created and assessment.max_marks is None and assessment.average_marks is None:
+                    assessment.max_marks = None
+                    assessment.average_marks = None
+                    assessment.save()
+        
+        # Create other assessment types (only if their weights > 0)
+        assessment_types = [
+            ('hw', config.hw_weight),
+            ('midterm', config.midterm_weight),
+            ('final', config.final_weight),
+            ('lab', config.lab_weight)
+        ]
+        
+        for assessment_type, weight in assessment_types:
+            if weight > 0:  # Only create if weight is greater than 0
+                assessment, created = Assessment.objects.get_or_create(
+                    section=section,
+                    assessment_type=assessment_type,
+                    assessment_number=1,
+                    defaults={'max_marks': None, 'average_marks': None}
+                )
+                # If assessment exists but has no data, reset it
+                if not created and assessment.max_marks is None and assessment.average_marks is None:
+                    assessment.max_marks = None
+                    assessment.average_marks = None
+                    assessment.save()
+        
+        # Remove assessments that are no longer needed based on current config and weights
+        # Remove quiz assessments if num_quizzes is 0 OR quiz_weight is 0
+        if config.num_quizzes == 0 or config.quiz_weight == 0:
+            Assessment.objects.filter(
                 section=section,
-                assessment_type='hw',
-                assessment_number=1,
-                max_marks=None,
-                average_marks=None
-            )
-            
-            Assessment.objects.create(
+                assessment_type='quiz'
+            ).delete()
+        else:
+            # Remove extra quiz assessments if num_quizzes was reduced
+            Assessment.objects.filter(
                 section=section,
-                assessment_type='midterm',
-                assessment_number=1,
-                max_marks=None,
-                average_marks=None
-            )
-            
-            Assessment.objects.create(
+                assessment_type='quiz',
+                assessment_number__gt=config.num_quizzes
+            ).delete()
+        
+        # Remove assignment assessments if num_assignments is 0 OR assignment_weight is 0
+        if config.num_assignments == 0 or config.assignment_weight == 0:
+            Assessment.objects.filter(
                 section=section,
-                assessment_type='final',
-                assessment_number=1,
-                max_marks=None,
-                average_marks=None
-            )
-            
-            Assessment.objects.create(
+                assessment_type='assignment'
+            ).delete()
+        else:
+            # Remove extra assignment assessments if num_assignments was reduced
+            Assessment.objects.filter(
                 section=section,
-                assessment_type='lab',
-                assessment_number=1,
-                max_marks=None,
-                average_marks=None
-            )
+                assessment_type='assignment',
+                assessment_number__gt=config.num_assignments
+            ).delete()
+        
+        # Remove other assessment types if their weights are 0
+        for assessment_type, weight in assessment_types:
+            if weight == 0:
+                Assessment.objects.filter(
+                    section=section,
+                    assessment_type=assessment_type
+                ).delete()
     
     print("DEBUG: About to render course_assessments template")
     return render(request, 'uca_app/course_assessments.html', {
@@ -613,10 +650,36 @@ def course_analysis(request, course_id):
             'weighted_score': stat['weighted_score'],
         })
     
+    # Create filtered assessment types configuration for template
+    assessment_types_config = []
+    
+    # Only include assessment types that have non-zero weights or numbers
+    if config.quiz_weight > 0 and config.num_quizzes > 0:
+        assessment_types_config.append({'key': 'quiz_percentage', 'name': 'Quiz Avg', 'color': '#55C2C3'})
+    
+    if config.assignment_weight > 0 and config.num_assignments > 0:
+        assessment_types_config.append({'key': 'assignment_percentage', 'name': 'Assign Avg', 'color': '#A2C4AD'})
+    
+    if config.hw_weight > 0:
+        assessment_types_config.append({'key': 'hw_percentage', 'name': 'HW Avg', 'color': '#C7E1F3'})
+    
+    if config.midterm_weight > 0:
+        assessment_types_config.append({'key': 'midterm_percentage', 'name': 'Midterm Avg', 'color': '#F0C4C0'})
+    
+    if config.final_weight > 0:
+        assessment_types_config.append({'key': 'final_percentage', 'name': 'Final Avg', 'color': '#BDE3E3'})
+    
+    if config.lab_weight > 0:
+        assessment_types_config.append({'key': 'lab_percentage', 'name': 'Lab Avg', 'color': '#DBC6E4'})
+    
+    # Always include weighted score
+    assessment_types_config.append({'key': 'weighted_score', 'name': 'Weighted', 'color': '#696969'})
+    
     return render(request, 'uca_app/course_analysis.html', {
         'course': course,
         'section_stats': section_stats,
         'section_stats_json': json.dumps(section_stats_json),
+        'assessment_types_config': json.dumps(assessment_types_config),
         'charts': charts,
         'config': config,
         'total_students': total_students,
@@ -1109,9 +1172,10 @@ def generate_pdf_report(course, options):
     c.setFont("Helvetica-Bold", 16)
     c.drawCentredString(page_w/2, page_h - 120, "Department of Physics")
     
-    # Report title
+    # Report title - use custom title if provided
+    report_title = options.get('report_title', 'Course Assessment Report')
     c.setFont("Helvetica-Bold", 14)
-    c.drawCentredString(page_w/2, page_h - 180, "Course Assessment Report")
+    c.drawCentredString(page_w/2, page_h - 180, report_title)
     
     # Course information
     c.setFont("Helvetica", 12)
@@ -1126,65 +1190,71 @@ def generate_pdf_report(course, options):
     
     c.showPage()
     
-    # Second page - Section Statistics (if available)
-    try:
-        analysis_data = CourseAnalysisData.objects.get(course=course)
-        if analysis_data.section_statistics:
-            c.setFont("Helvetica-Bold", 14)
-            c.drawString(40, page_h - 50, "Section Statistics")
-            
-            # Check for section statistics table image
-            table2_path = os.path.join(reports_dir, f"section_stats_table_{course.id}.png")
-            if os.path.exists(table2_path):
-                img = PILImage.open(table2_path)
-                iw, ih = img.size
-                tw = page_w - 80
-                th = tw * ih / iw
-                y_table = page_h - 80 - th
-                c.drawImage(table2_path, 40, y_table, width=tw, height=th, mask='auto')
-            
-            # Check for section statistics chart image
-            chart2_path = os.path.join(reports_dir, f"section_stats_chart_{course.id}.png")
-            if os.path.exists(chart2_path):
-                img2 = PILImage.open(chart2_path)
-                iw2, ih2 = img2.size
-                cw = page_w - 80
-                ch = cw * ih2 / iw2
-                y_chart = y_table - 20 - ch if 'y_table' in locals() else page_h - 80 - ch
-                c.drawImage(chart2_path, 40, y_chart, width=cw, height=ch, mask='auto')
-            
-            c.showPage()
-    except CourseAnalysisData.DoesNotExist:
-        pass
+    # Second page - Section Statistics (if available and enabled)
+    if options.get('include_tables', True) or options.get('include_charts', True):
+        try:
+            analysis_data = CourseAnalysisData.objects.get(course=course)
+            if analysis_data.section_statistics:
+                c.setFont("Helvetica-Bold", 14)
+                c.drawString(40, page_h - 50, "Section Statistics")
+                
+                # Include table if enabled
+                if options.get('include_tables', True):
+                    table2_path = os.path.join(reports_dir, f"section_stats_table_{course.id}.png")
+                    if os.path.exists(table2_path):
+                        img = PILImage.open(table2_path)
+                        iw, ih = img.size
+                        tw = page_w - 80
+                        th = tw * ih / iw
+                        y_table = page_h - 80 - th
+                        c.drawImage(table2_path, 40, y_table, width=tw, height=th, mask='auto')
+                
+                # Include chart if enabled
+                if options.get('include_charts', True):
+                    chart2_path = os.path.join(reports_dir, f"section_stats_chart_{course.id}.png")
+                    if os.path.exists(chart2_path):
+                        img2 = PILImage.open(chart2_path)
+                        iw2, ih2 = img2.size
+                        cw = page_w - 80
+                        ch = cw * ih2 / iw2
+                        y_chart = y_table - 20 - ch if 'y_table' in locals() else page_h - 80 - ch
+                        c.drawImage(chart2_path, 40, y_chart, width=cw, height=ch, mask='auto')
+                
+                c.showPage()
+        except CourseAnalysisData.DoesNotExist:
+            pass
     
-    # Third page - Grade Distribution
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(40, page_h - 50, "Grade Distribution")
-    
-    # Check for grade distribution table image
-    grade_table_path = os.path.join(reports_dir, f"grade_dist_table_{course.id}.png")
-    if os.path.exists(grade_table_path):
-        img3 = PILImage.open(grade_table_path)
-        iw3, ih3 = img3.size
-        tw3 = page_w - 80
-        th3 = tw3 * ih3 / iw3
-        y_t3 = page_h - 80 - th3
-        c.drawImage(grade_table_path, 40, y_t3, width=tw3, height=th3, mask='auto')
+    # Third page - Grade Distribution (if enabled)
+    if options.get('include_grade_distribution', True):
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(40, page_h - 50, "Grade Distribution")
         
-        # Check for grade distribution chart image
-        grade_chart_path = os.path.join(reports_dir, f"grade_dist_chart_{course.id}.png")
-        print(f"DEBUG: Looking for grade chart at: {grade_chart_path}")
-        print(f"DEBUG: Grade chart exists: {os.path.exists(grade_chart_path)}")
-        if os.path.exists(grade_chart_path):
-            img4 = PILImage.open(grade_chart_path)
-            iw4, ih4 = img4.size
-            cw4 = page_w - 80
-            ch4 = cw4 * ih4 / iw4
-            y_c3 = y_t3 - 20 - ch4
-            c.drawImage(grade_chart_path, 40, y_c3, width=cw4, height=ch4, mask='auto')
-            print(f"DEBUG: Grade chart added to PDF successfully")
-        else:
-            print(f"DEBUG: Grade chart not found, skipping chart in PDF")
+        # Include grade distribution table if enabled
+        if options.get('include_tables', True):
+            grade_table_path = os.path.join(reports_dir, f"grade_dist_table_{course.id}.png")
+            if os.path.exists(grade_table_path):
+                img3 = PILImage.open(grade_table_path)
+                iw3, ih3 = img3.size
+                tw3 = page_w - 80
+                th3 = tw3 * ih3 / iw3
+                y_t3 = page_h - 80 - th3
+                c.drawImage(grade_table_path, 40, y_t3, width=tw3, height=th3, mask='auto')
+        
+        # Include grade distribution chart if enabled
+        if options.get('include_charts', True):
+            grade_chart_path = os.path.join(reports_dir, f"grade_dist_chart_{course.id}.png")
+            print(f"DEBUG: Looking for grade chart at: {grade_chart_path}")
+            print(f"DEBUG: Grade chart exists: {os.path.exists(grade_chart_path)}")
+            if os.path.exists(grade_chart_path):
+                img4 = PILImage.open(grade_chart_path)
+                iw4, ih4 = img4.size
+                cw4 = page_w - 80
+                ch4 = cw4 * ih4 / iw4
+                y_c3 = y_t3 - 20 - ch4 if 'y_t3' in locals() else page_h - 80 - ch4
+                c.drawImage(grade_chart_path, 40, y_c3, width=cw4, height=ch4, mask='auto')
+                print(f"DEBUG: Grade chart added to PDF successfully")
+            else:
+                print(f"DEBUG: Grade chart not found, skipping chart in PDF")
     
     # Save the PDF
     c.save()
@@ -1217,9 +1287,10 @@ def generate_excel_report(course, options):
     # Create Excel writer
     with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
         # Course Information Sheet
+        report_title = options.get('report_title', 'Course Assessment Report')
         course_info = pd.DataFrame({
-            'Field': ['Course Name', 'Course Code', 'Term/Semester', 'Coordinator', 'Total Sections', 'Number of Quizzes', 'Number of Assignments', 'Quiz Weight', 'Assignment Weight', 'HW Weight', 'Midterm Weight', 'Final Weight', 'Lab Weight', 'Generated On'],
-            'Value': [course.name, course.code, course.term_semester, course.coordinator, total_sections, config.num_quizzes, config.num_assignments, config.quiz_weight, config.assignment_weight, config.hw_weight, config.midterm_weight, config.final_weight, config.lab_weight, datetime.now().strftime("%d %B %Y")]
+            'Field': ['Report Title', 'Course Name', 'Course Code', 'Term/Semester', 'Coordinator', 'Total Sections', 'Number of Quizzes', 'Number of Assignments', 'Quiz Weight', 'Assignment Weight', 'HW Weight', 'Midterm Weight', 'Final Weight', 'Lab Weight', 'Generated On'],
+            'Value': [report_title, course.name, course.code, course.term_semester, course.coordinator, total_sections, config.num_quizzes, config.num_assignments, config.quiz_weight, config.assignment_weight, config.hw_weight, config.midterm_weight, config.final_weight, config.lab_weight, datetime.now().strftime("%d %B %Y")]
         })
         course_info.to_excel(writer, sheet_name='Course Info', index=False)
         
@@ -2103,16 +2174,30 @@ def save_chart_with_toggle_states(course, toggle_states):
     # Generate chart using Plotly with toggle states
     sections = [f"Section {stat['section_number']}" for stat in section_stats]
     
-    # Define assessment types and their colors (matching web app exactly)
-    assessment_types = [
-        {'key': 'quiz_percentage', 'name': 'Quiz Avg', 'color': '#55C2C3'},
-        {'key': 'assignment_percentage', 'name': 'Assign Avg', 'color': '#A2C4AD'},
-        {'key': 'hw_percentage', 'name': 'HW Avg', 'color': '#C7E1F3'},
-        {'key': 'midterm_percentage', 'name': 'Midterm Avg', 'color': '#F0C4C0'},
-        {'key': 'final_percentage', 'name': 'Final Avg', 'color': '#BDE3E3'},
-        {'key': 'lab_percentage', 'name': 'Lab Avg', 'color': '#DBC6E4'},
-        {'key': 'weighted_score', 'name': 'Weighted', 'color': '#696969'}
-    ]
+    # Define assessment types and their colors (only include non-zero weights/numbers)
+    assessment_types = []
+    
+    # Only include assessment types that have non-zero weights or numbers
+    if config.quiz_weight > 0 and config.num_quizzes > 0:
+        assessment_types.append({'key': 'quiz_percentage', 'name': 'Quiz Avg', 'color': '#55C2C3'})
+    
+    if config.assignment_weight > 0 and config.num_assignments > 0:
+        assessment_types.append({'key': 'assignment_percentage', 'name': 'Assign Avg', 'color': '#A2C4AD'})
+    
+    if config.hw_weight > 0:
+        assessment_types.append({'key': 'hw_percentage', 'name': 'HW Avg', 'color': '#C7E1F3'})
+    
+    if config.midterm_weight > 0:
+        assessment_types.append({'key': 'midterm_percentage', 'name': 'Midterm Avg', 'color': '#F0C4C0'})
+    
+    if config.final_weight > 0:
+        assessment_types.append({'key': 'final_percentage', 'name': 'Final Avg', 'color': '#BDE3E3'})
+    
+    if config.lab_weight > 0:
+        assessment_types.append({'key': 'lab_percentage', 'name': 'Lab Avg', 'color': '#DBC6E4'})
+    
+    # Always include weighted score
+    assessment_types.append({'key': 'weighted_score', 'name': 'Weighted', 'color': '#696969'})
     
     # Create traces for each assessment type with toggle states
     chart_data = []
@@ -2371,23 +2456,30 @@ def save_section_statistics_images(course, section_stats, config):
         # Generate chart using Plotly (exact same as web application)
         sections = [f"Section {stat['section_number']}" for stat in section_stats]
         
-        # Define assessment types and their colors (matching web app exactly)
-        assessment_types = [
-            {'key': 'quiz_percentage', 'name': 'Quiz Avg', 'color': '#4ECDC4'},
-        ]
+        # Define assessment types and their colors (only include non-zero weights/numbers)
+        assessment_types = []
         
-        # Only include assignment if weight > 0
-        if config.assignment_weight > 0:
+        # Only include assessment types that have non-zero weights or numbers
+        if config.quiz_weight > 0 and config.num_quizzes > 0:
+            assessment_types.append({'key': 'quiz_percentage', 'name': 'Quiz Avg', 'color': '#4ECDC4'})
+        
+        if config.assignment_weight > 0 and config.num_assignments > 0:
             assessment_types.append({'key': 'assignment_percentage', 'name': 'Assign Avg', 'color': '#00B894'})
         
-        # Add remaining assessment types
-        assessment_types.extend([
-            {'key': 'hw_percentage', 'name': 'HW Avg', 'color': '#96CEB4'},
-            {'key': 'midterm_percentage', 'name': 'Midterm Avg', 'color': '#F0C4C0'},
-            {'key': 'final_percentage', 'name': 'Final Avg', 'color': '#BDE3E3'},
-            {'key': 'lab_percentage', 'name': 'Lab Avg', 'color': '#DBC6E4'},
-            {'key': 'weighted_score', 'name': 'Weighted', 'color': '#696969'}
-        ])
+        if config.hw_weight > 0:
+            assessment_types.append({'key': 'hw_percentage', 'name': 'HW Avg', 'color': '#96CEB4'})
+        
+        if config.midterm_weight > 0:
+            assessment_types.append({'key': 'midterm_percentage', 'name': 'Midterm Avg', 'color': '#F0C4C0'})
+        
+        if config.final_weight > 0:
+            assessment_types.append({'key': 'final_percentage', 'name': 'Final Avg', 'color': '#BDE3E3'})
+        
+        if config.lab_weight > 0:
+            assessment_types.append({'key': 'lab_percentage', 'name': 'Lab Avg', 'color': '#DBC6E4'})
+        
+        # Always include weighted score
+        assessment_types.append({'key': 'weighted_score', 'name': 'Weighted', 'color': '#696969'})
         
         # Create traces for each assessment type (matching web app)
         chart_data = []
